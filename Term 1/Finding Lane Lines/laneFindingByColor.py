@@ -28,6 +28,6 @@ color_select[thresholds] = [0,0,0]
 plt.imshow(color_select)
 # Display the image                 
 plt.imshow(color_select)
-
+plt.show()
 # Uncomment the following code if you are running the code locally and wish to save the image
 mpimg.imsave("test-after.jpg", color_select)

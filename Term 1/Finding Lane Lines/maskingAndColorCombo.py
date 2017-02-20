@@ -58,7 +58,8 @@ line_image[~color_thresholds & region_thresholds] = [255,0,0]
 
 # Display our two output images
 plt.imshow(color_select)
+plt.show()
 plt.imshow(line_image)
 
-
+plt.show()
 mpimg.imsave("test-after-masking-and-color.jpg", line_image)
