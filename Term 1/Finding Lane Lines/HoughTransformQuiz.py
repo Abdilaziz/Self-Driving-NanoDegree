@@ -17,6 +17,7 @@ low_threshold = 50
 high_threshold = 150
 edges = cv2.Canny(blur_gray, low_threshold, high_threshold)
 
+
 # Next we'll create a masked edges image using cv2.fillPoly()
 mask = np.zeros_like(edges)   
 ignore_mask_color = 255   
