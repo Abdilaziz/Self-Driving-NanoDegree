@@ -18,6 +18,9 @@ dropout = 0.75  # Dropout, probability to keep units
 
 
 # Store layers weight & bias
+# [filter_size_height, filter_size_width, color_channels, k_output]
+# The shape of the filter weight is (height, width, input_depth, output_depth)
+# The shape of the filter bias is (output_depth,)
 weights = {
     'wc1': tf.Variable(tf.random_normal([5, 5, 1, 32])),
     'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])),
@@ -44,7 +47,7 @@ def maxpool2d(x, k=2):
 
 def conv_net(x, weights, biases, dropout):
     # Layer 1 - 28*28*1 to 14*14*32
-            # 28x28x1 to 28x28x32
+            # 28x28x1 to 28x28x32 (Function has a stride of 1)
     conv1 = conv2d(x, weights['wc1'], biases['bc1'])
             # 28x28x32 to 14x14x32
     conv1 = maxpool2d(conv1, k=2)
