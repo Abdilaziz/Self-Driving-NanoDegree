@@ -53,19 +53,12 @@ from tensorflow.contrib.layers import flatten
 # Convolution layer 2. The output shape should be 10x10x16.
 # Activation 2. Your choice of activation function.
 # Poling layer 2. The output shape should be 5x5x16.
-
 # Flatten layer. Flatten the output shape of the final pooling layer such that it's 1D instead of 3D. The easiest way to do is by using tf.contrib.layers.flatten, which is already imported for you.
-
 # Fully connected layer 1. This should have 120 outputs.
-
 # Activation 3. Your choice of activation function.
-
 # Fully connected layer 2. This should have 84 outputs.
-
 # Activation 4. Your choice of activation function.
-
 # Fully connected layer 3. This should have 10 outputs.
-
 # You'll return the result of the final fully connected layer from the LeNet function.
 
 
@@ -73,30 +66,54 @@ def LeNet(x):
     # Arguments used for tf.truncated_normal, randomly defines variables for the weights and biases for each layer
     mu = 0
     sigma = 0.1
-    
-    # TODO: Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
 
+    weights = {
+    'wc1': tf.Variable(tf.truncated_normal(shape=(5, 5, 1, 6), mean=mu,stddev=sigma)),
+    'wc2': tf.Variable(tf.truncated_normal(shape=(5, 5, 6, 16),mean=mu,stddev=sigma)),
+    'wfc1': tf.Variable(tf.truncated_normal(shape=(5*5*16,120), mean=mu, stddev=sigma)),
+    'wfc2': tf.Variable(tf.truncated_normal(shape=(120,84) , mean=mu , stddev=sigma)),
+    'out': tf.Variable(tf.truncated_normal(shape=(84,10), mean=mu,stddev=sigma ))}
+
+    biases = {
+    'bc1': tf.Variable(tf.zeros((6))),
+    'bc2': tf.Variable(tf.zeros((16))),
+    'bfc1': tf.Variable(tf.zeros((120))),
+    'bfc2': tf.Variable(tf.zeros(84)),
+    'out': tf.Variable(tf.zeros((10)))}
+
+    
+    # TODO: Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6. (Change in width and height comes from using VALID padding)
+    conv1 = tf.nn.conv2d(x, weights['wc1'], strides=[1, 1, 1, 1], padding='VALID') + biases['bc1']
     # TODO: Activation.
+    conv1 = tf.nn.relu(conv1)
 
     # TODO: Pooling. Input = 28x28x6. Output = 14x14x6.
+    conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
-    # TODO: Layer 2: Convolutional. Output = 10x10x16.
-    
+    # TODO: Layer 2: Convolutional. Input = 14x14x6  Output = 10x10x16.
+    conv2 = tf.nn.conv2d(conv1,weights['wc2'],strides=[1,1,1,1],padding='VALID') + biases['bc2']
     # TODO: Activation.
+    conv2 = tf.nn.relu(conv2)
 
     # TODO: Pooling. Input = 10x10x16. Output = 5x5x16.
+    conv2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     # TODO: Flatten. Input = 5x5x16. Output = 400.
-    
+    conv2 = flatten(conv2)
     # TODO: Layer 3: Fully Connected. Input = 400. Output = 120.
-    
+    fc1 = tf.add(tf.matmul(conv2,weights['wfc1']),biases['bfc1'])
+
     # TODO: Activation.
+    fc1 = tf.nn.relu(fc1)
 
     # TODO: Layer 4: Fully Connected. Input = 120. Output = 84.
-    
+    fc2 = tf.add(tf.matmul(fc1,weights['wfc2']),biases['bfc2'])
+
     # TODO: Activation.
+    fc2 = tf.nn.relu(fc2)
 
     # TODO: Layer 5: Fully Connected. Input = 84. Output = 10.
+    logits = tf.add(tf.matmul(fc2,weights['out']),biases['out'])
     
     return logits
 
