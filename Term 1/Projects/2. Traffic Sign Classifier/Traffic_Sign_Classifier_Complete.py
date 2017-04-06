@@ -22,7 +22,7 @@
 # ---
 # ## Step 0: Load The Data
 
-# In[28]:
+# In[1]:
 
 # Load pickled data
 import pickle
@@ -58,7 +58,7 @@ X_test, y_test = test['features'], test['labels']
 
 # ### Provide a Basic Summary of the Data Set Using Python, Numpy and/or Pandas
 
-# In[29]:
+# In[2]:
 
 # Number of training examples
 n_train = X_train.shape[0]
@@ -86,7 +86,7 @@ print("Number of classes =", n_classes)
 # 
 # **NOTE:** It's recommended you start with something simple first. If you wish to do more, come back to it after you've completed the rest of the sections.
 
-# In[30]:
+# In[3]:
 
 ### Data exploration visualization code goes here.
 ### Feel free to use as many code cells as needed.
@@ -103,7 +103,7 @@ plt.imshow(image)
 print(y_train[index])
 
 
-# In[31]:
+# In[4]:
 
 # Plot of the Histogram for the Training Set
 data = (np.bincount(y_train)/len(y_train))*100
@@ -117,7 +117,7 @@ plt.axis([0, n_classes, 0, 6])
 plt.show()
 
 
-# In[32]:
+# In[5]:
 
 # Plot of the Histogram for the Validation set
 data = (np.bincount(y_valid)/len(y_valid))*100
@@ -154,7 +154,7 @@ plt.show()
 
 # Use the code cell (or multiple code cells, if necessary) to implement the first step of your project.
 
-# In[33]:
+# In[6]:
 
 # RGB to Gray
 def rgb2Gray(image):
@@ -173,7 +173,7 @@ def preprocess(image):
     return image
 
 
-# In[34]:
+# In[7]:
 
 # Preprocess Images
 X_train = np.array([preprocess(image) for image in X_train], dtype=np.float32)
@@ -186,7 +186,7 @@ plt.imshow(image, cmap='gray')
 print(X_train[0].shape)
 
 
-# In[35]:
+# In[8]:
 
 # Suffle:
 from sklearn.utils import shuffle
@@ -195,7 +195,7 @@ X_train, y_train = shuffle(X_train,y_train)
 
 # ### Model Architecture
 
-# In[37]:
+# In[9]:
 
 import tensorflow as tf
 from tensorflow.contrib.layers import flatten
@@ -203,7 +203,7 @@ EPOCHS = 10
 BATCH_SIZE = 128
 
 
-# In[38]:
+# In[10]:
 
 def LeNet(x,keepprob):    
     # Arguments used for tf.truncated_normal, randomly defines variables for the weights and biases for each layer
@@ -272,7 +272,7 @@ def LeNet(x,keepprob):
 # A validation set can be used to assess how well the model is performing. A low accuracy on the training and validation
 # sets imply underfitting. A high accuracy on the training set but low accuracy on the validation set implies overfitting.
 
-# In[39]:
+# In[11]:
 
 # Train, Validate, and Test the Model
 
@@ -335,7 +335,7 @@ with tf.Session() as sess:
     print("Model saved")
 
 
-# In[40]:
+# In[12]:
 
 # evaluate the Model
 
@@ -356,7 +356,7 @@ with tf.Session() as sess:
 
 # ### Load and Output the Images
 
-# In[42]:
+# In[13]:
 
 ### Load the images and plot them
 import os
@@ -382,7 +382,7 @@ for image in images:
 
 # ### Predict the Sign Type for Each Image
 
-# In[43]:
+# In[14]:
 
 get_ipython().magic('matplotlib inline')
 
@@ -408,7 +408,7 @@ with tf.Session() as sess:
 
 # ### Analyze Performance
 
-# In[44]:
+# In[15]:
 
 ### Calculate the accuracy for these 5 new images. 
 ### For example, if the model predicted 1 out of 5 signs correctly, it's 20% accurate on these new images. 
@@ -464,10 +464,12 @@ print('Accuracy of New Images: {}%'.format((i/image_class.shape[0])*100))
 # 
 # Looking just at the first row we get `[ 0.34763842,  0.24879643,  0.12789202]`, you can confirm these are the 3 largest probabilities in `a`. You'll also notice `[3, 0, 5]` are the corresponding indices.
 
-# In[45]:
+# In[19]:
 
 ### Print out the top five softmax probabilities for the predictions on the German traffic sign images found on the web. 
 ### Feel free to use as many code cells as needed.
+
+import seaborn as sns
 
 softmax = tf.nn.softmax(logits)
 
@@ -476,7 +478,17 @@ with tf.Session() as sess:
     saver.restore(sess, tf.train.latest_checkpoint('.'))
 
     topK = sess.run(tf.nn.top_k(softmax,k=5),feed_dict={x: images})
-    print(topK)
+
+    for i in range(5):
+        print("Predicted  Class: {} | True Class: {}".format(Prediction[i], image_class[i]))
+        plt.figure(figsize=(1,1))
+        plt.imshow(images[i][:,:,0], cmap='gray')
+        plt.axis('off')
+        
+        fig = plt.figure(figsize=(12,4))
+        sns.barplot(x=topK[1][i], y=topK[0][i])
+        plt.show()
+    
 
 
 # ---
