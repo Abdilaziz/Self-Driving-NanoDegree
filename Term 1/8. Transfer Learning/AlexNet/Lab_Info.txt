@@ -1,0 +1,5 @@
+We will take an implementation of AlexNet's Architecture with
+the weights provided by the Berkeley Vision and Learning Center, and use
+transfer learning to implement it with the German Traffic Sign Recognition Training Data
+
+AlexNet was originally trained on the ImageNet Database and took about a week of training time to complete.
