@@ -19,10 +19,10 @@ def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
     #RGB if mpimg is used, if cv2.imread() is used, use BGR
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # 2) Take the derivative in x or y given orient = 'x' or 'y'
-    if orient == 'y':
+    if orient == 'x':
         sobel = cv2.Sobel(gray, cv2.CV_64F,1,0)
-    else:
-        sobel= cv2.Sobel(gray,cv2.CV_64F,1,0)
+    else if orient == 'y':
+        sobel= cv2.Sobel(gray,cv2.CV_64F,0,1)
     # 3) Take the absolute value of the derivative or gradient
     abs_sobel = np.absolute(sobel)
     # 4) Scale to 8-bit (0 - 255) then convert to type = np.uint8
