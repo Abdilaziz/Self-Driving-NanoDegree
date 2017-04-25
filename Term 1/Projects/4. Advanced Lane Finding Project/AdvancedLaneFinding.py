@@ -21,6 +21,7 @@ def calibrate_camera(pickleFile):
 	objp[:,:2] = np.mgrid[0:nx,0:ny].T.reshape(-1,2)
 
 	image_shape = ()
+
 	print('Number of Calibration Images: {}'.format(len(images)))
 
 	for idx, fname, in enumerate(images):
@@ -33,11 +34,12 @@ def calibrate_camera(pickleFile):
 		if ret == True:
 			imgpoints.append(corners)
 			objpoints.append(objp)
-
-    # maps 3D points to 2D points and returns the required distortion matrix and distortion coefficients
+	# maps 3D points to 2D points and returns the required distortion matrix and distortion coefficients
 	ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_shape[0:2],None,None)
+	dst = cv2.undistort(mpimg.imread(images[0]), mtx, dist, None, mtx)
+	mpimg.imsave('CarND-Advanced-Lane-Lines/output_images/calibrationAfter1.jpg',dst)
+	# writes camera calibration values to a pickle, so that it can be reused
 
-    # writes camera calibration values to a pickle, so that it can be reused
 	dist_pickle = {}
 	dist_pickle["mtx"] = mtx
 	dist_pickle["dist"] = dist
@@ -236,6 +238,7 @@ def findLanes(binary_warped, left_lines, right_lines):
     y_eval = binary_warped.shape[0]
 
     # Define conversions in x and y from pixels space to meters
+    # Avg lane is 30 meters long and 3.7 meters wide
     ym_per_pix = 30/720 # meters per pixel in y dimension
     xm_per_pix = 3.7/700 # meters per pixel in x dimension
 
@@ -307,20 +310,6 @@ def findLanes(binary_warped, left_lines, right_lines):
         righty = np.array(right_lines.ally)
         rightx = np.array(right_lines.allx)
 
-        # # Fit new polynomials to x,y in world space
-        # left_fit_cr = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
-        # right_fit_cr = np.polyfit(righty*ym_per_pix, rightx*xm_per_pix, 2)
-        # # Calculate the new radii of curvature
-        # left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
-        # right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
-
-        # # get distance in meters from the cars position (center of the image at the bottom)
-        # leftlanes_centerPos = left_fit_cr[0]*(y_eval*ym_per_pix)**2 + left_fit_cr[1]*(y_eval*ym_per_pix) + left_fit_cr[2]
-        # rightlanes_centerPos = right_fit_cr[0]*(y_eval*ym_per_pix)**2 + right_fit_cr[1]*(y_eval*ym_per_pix) + right_fit_cr[2]
-
-        # carPosition = (binary_warped.shape[1]/2)*xm_per_pix
-        # leftDistance = carPosition - leftlanes_centerPos
-        # rightDistance = rightlanes_centerPos -carPosition
 
         left_lines.update(leftlane_detected, avgLeftlanex, avgLeftcoeff, left_curverad, leftDistance, leftx, lefty )
         right_lines.update(rightlane_detected, avgRightlanex, avgRightcoeff, right_curverad, rightDistance, rightx, righty)
@@ -344,7 +333,6 @@ def process_Image(img, mtx, dist, left_lines, right_lines, path=''):
     # mag_binary = mag_thresh(gray, sobel_kernel=ksize, thresh=(20, 255))
     # dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
 
-
     # combine all the thresholds into one image.
     combined = np.zeros_like(saturation)
     # combined[(   (thresh_lightness == 1) & (saturation == 1) |  ((gradx==1) & (grady==1))| ((mag_binary == 1) & (dir_binary == 1)) )] = 1
@@ -353,10 +341,11 @@ def process_Image(img, mtx, dist, left_lines, right_lines, path=''):
 
     # Transform the Perspective of the conbined image from the current view, to the birds eye view needed to find lane lines well
     img_size = (combined.shape[1], combined.shape[0])
-    offset = 300
+    # offset = 300
     # src values are intended to be parrallel with the lane lines in an image with straight lane lines. These values where gained from playing with what gave the best output
-    # src = np.float32([(607,440), (672,440), (1150,img_size[1]), (150,img_size[1])])
-    src = np.float32([(589,457), (698,457), (1145,img_size[1]), (190,img_size[1])])
+    offset = 320
+    src = np.float32([(585,460), (695,460), (1127,img_size[1]), (203,img_size[1])])
+    # src = np.float32([(589,457), (698,457), (1145,img_size[1]), (190,img_size[1])])
     dest = np.float32([[offset, 0], [img_size[0]-offset, 0],[img_size[0]-offset, img_size[1]], [offset, img_size[1]]])
     M = cv2.getPerspectiveTransform(src,dest)
     # inverse matrix is also calculated to transform back from the birds eye view to the original view.
@@ -383,6 +372,16 @@ def process_Image(img, mtx, dist, left_lines, right_lines, path=''):
     # Combine the result with the original image
     
     result = cv2.addWeighted(undist_img, 1, newwarp, 0.3, 0)
+
+    # print('Histogram Method Curvature Values: Left Lane: {} m , Right Lane: {} m'.format(left_lines.radius_of_curvature, right_lines.radius_of_curvature))
+    curvature = (round(left_lines.radius_of_curvature,2) + round(right_lines.radius_of_curvature))*0.5
+    text1 = "Avg Curvature of Both Lanes: " + str(curvature) + ' m'
+    cv2.putText(result,text1, (430,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
+
+    lane_width = 3.7 # Avg Lane width is 3.7 meters
+    distfromcenter = round(0.5*(right_lines.line_base_pos-lane_width/2) +  0.5*(abs(left_lines.line_base_pos)-lane_width/2),2)
+    text2 = 'Distance from center lane: ' + str(distfromcenter) + ' m'
+    cv2.putText(result,text2, (430,80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
 
     # saving images needed if images are used.
     if path !='':
@@ -439,7 +438,7 @@ class Line():
     def update(self, detected, xValues, fitCoeff, radius_of_curvature, lanes_distance, detectedx, detectedy):
         self.detected = detected
 
-        n = 40
+        n = 10
         self.recent_xfitted.append(xValues)
         if (len(self.recent_xfitted) > n):
             self.recent_xfitted = self.recent_xfitted[1:]
@@ -504,13 +503,12 @@ def runOnVideo(mtx, dist):
     
     # testing processing on a short section of the video
     # 20 to 26 is the difficult area of the video
-    clip1 = clip1.subclip(38, 42)
+    # clip1 = clip1.subclip(38, 42)
 
     print('Processing Each Frame of the Video')
     for frame in clip1.iter_frames():
 
         result, left_lines, right_lines = process_Image(frame, mtx, dist, left_lines, right_lines)
-        # print('Completed: {}'.format(i))
         new_frames.append(result)
 
 
