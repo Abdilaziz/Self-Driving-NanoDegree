@@ -1,0 +1,51 @@
+SVM is another alogrithm to help solve Supervised Classification Problems.
+
+it stands for support vecotr machines
+
+What SVMs do is find a seperating line called a hyper plane between data of 2 classes. takes data inputs and gives a line that seperates that data.
+
+svm gives the line that maximizes the distance to the nearest points of either of the class (Margin). so that it can be in between both.
+it makes it more robust
+
+
+SVMs makes sure the classifications of each data point is correct first, then it wil maximize the margin.
+If there is no possible decision surface, what should svm do. If there is an outlier that makes a decision surface imposible, that outlier will then be igonred by the algorithm
+
+SVMs ignores Outliers. It mediates the ability to make a right decison surface while being robust to outliers.
+
+
+When using SVM there are 3 important parameters.
+
+Kernel - controls what type of decision surface you wish to gain, wheter it is linear,
+curvy, or others. it is important to understand the the most compilacted boundaries are not necessarily
+the best to choose in terms of accuracy
+
+the kernel is a function that allows a decision surface that looks non-linear be calculated by adding more features. for ex.
+if a decision surface for your data looks like it should be a circle, it adds a features with the data x^2 and y^2, that value z (higher domain), is then graphed vs x and a clear decision line is given (straight horizontal line). with that line it goes back to the original domain and plots that z value as the radius of that circle, and thus the decision surface is aquired
+
+C - having a larger C value adjusts the balance between fitting the test data into the correct categories,
+and getting a more general decision surface (hyper plane)
+
+A Higher C value means more training points are correct.
+So the Decision Boundary is more complex.
+A more general surface works better on your test set.
+
+Gamma - affects how much influence a single training example has on the overal surface. the larger the gamma, the more other samples are affected.
+
+For high values of gamma, points closer to the decision boundary have a greater influence on the decision boundary.
+
+
+Thanking your data and making overly complicated surface, it is called Overfitting.
+most of the time, it is more accurate to have a more simple, generalized surface.
+
+
+
+When training an SVM with the Radial Basis Function (RBF) kernel, two parameters must be considered: C and gamma. The parameter C, common to all SVM kernels, trades off misclassification of training examples against simplicity of the decision surface. A low C makes the decision surface smooth, while a high C aims at classifying all training examples correctly. gamma defines how much influence a single training example has. The larger gamma is, the closer other examples must be to be affected
+
+advantages:
+SVMs work really well in complicated domains (high number of features) where there is a clear margin of seperation
+disadvantages:
+they dont work well with large data sets due to the training time being long (calculation of the domain change until a linear svm can be caluclated and working backwards)
+the training time for svm happens to be cubic (big Oh is cubic with respect to the data set)
+SVM also doesnt work well with lots of noise (naive bays is better for noise)
+SVM can overfit as well if the data set is complex.

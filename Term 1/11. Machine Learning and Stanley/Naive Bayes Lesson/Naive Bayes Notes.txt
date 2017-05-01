@@ -1,0 +1,150 @@
+Review Stats/Regression/Residuals: 
+https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data#residuals-least-squares-rsquared
+
+
+
+
+Supervised Classification Problem (Naive Bayes Lessons)
+
+A problem that has been viewed and the correct answer is already known
+Problem emulates the correct answer through machine learning
+give them lots of examples and they will figure out what is right
+
+
+Supervised Classification Examples:
+Which Problems are classified as Supervized Classification Examples?
+(Data Needs to be labled in order for it to be considerd a classification example,A clear answer of things that are tracked needs to be known)
+
+Correct: From an album of tagged photos, recognize someone in a picture
+
+Incorrect: analyze bank data for wierd transactions and flag those for fraud (What would be considered wierd isn't a standard labeld value) It is unsupervised learning
+
+Correct: Given someones music choices and a bunch of features of that music(tempo, genre, etc.), recommend a new song
+
+Incorrect: cluster udacity students into types based on learning styles
+Unsupervised learning, dont know types or how much types there are.
+
+
+Features and Labels:
+
+Ex. Music 
+Katie likes the song Let it Go,
+We Extract features like intensity, tempo, genre, gender,(Features) from the music, and then katie filters the song into 2 categories, like and dont like (Labels).
+
+
+
+To a machine learning person, they would make a scatter plot of the features, 
+
+Ex. Tempo (From relaxed to fast) vs Intensity (Light to soaring)
+
+Each song is a point on the plot, the section on the graph that features the songs that katie likes is one category. 
+If a new song is encountered and it falls into that space in the graph, it can be recommend as a song she could like
+
+If the scatterplot is not clearly laid out the information can be unlcear
+
+
+Ex. Self-Driving Car: The Steepnes and the ruggedness (Features) of a car is information that is gathered, the correct answer of wheter you should drive slow or fast (Labels) is put into categories
+
+Make scatterplot: Ruggedness can be measured with bumpiness (from smooth to bad), and Steepness can be measured wtih slope (from flat to very steep) plot the points and label them as you should drive fast or drive slow
+
+Bumpiness vs Steepness plot
+
+
+1 axis of the for each feature
+
+
+A machine learning algorithm defines something called a Decision Surfaces. On one side, it defines them as one label, and on the other side it defines them as the other label.
+
+
+Algorithm: Takes in Data ->  Transforms it to Decision Surface to make decisions on future cases
+
+
+
+
+Naive Bayes is an example of an alorightm to find a Decision Surface.
+
+Always Fit your data and test your accuracy on a different set of data. So a rule of thumb is
+keep 10% of your data as just test data and the rest to fit your data.
+
+
+
+
+Bayes Rule
+
+Prior Probability * Test Evidence -> Posterior probability
+
+Ex.
+Prob of cancer is 1%, Prob of Positive test given you have cancer is 90% (Test Sensitivity)
+Prob of Negative if you dont have C (Specivity) = 90%
+
+
+
+Therefore: P(Pos|C)=90%=0.9 or P(Pos|noC)= 10% = 0.1
+			P(C)=1%=0.01 or P(noC)=99% = 0.99
+			P(Neg|noC)=90%
+			
+
+Prior: P(C)= 0.01-1%
+
+(Joint Probability): P(C,PositiveResults)= P(C)*P(Pos|C) = 0.01*0.9 = 0.009
+			P(noC,Pos)=P(noC)*P(Pos|noC) = 0.99*0.1= 0.099
+
+Normalization to make them add to 1
+
+Normalizer = P(C|PositiveResults) + P(noC|Pos) = 0.108 = P(Pos)
+
+
+Posterior: P(C|Pos) = P(C,Pos)/P(Pos) = 0.009/0.108 = 0.0833333
+			P(noC|Pos) = P(noC,Pos)/P(Pos) = 0.099/0.108 = 0.91666667
+											P(C|Pos) + P(noC|Pos) = 1
+
+Ex.
+Text learning - Naive Bayes
+
+Chris and Sara email eachother (Both use 3 words: Love, deal, and Life)
+Both use them in different frequencies
+
+For Chris (Love:0.1,Deal:0.8,Life:0.1)
+For Sara (Love:.0.5,Deal:0.2,Life:0.3)
+
+Naive Bayes algorithm can help predict whether the email was sent by sara or by chris
+If the Prior Probability is: P(Chris)=0.5 and P(Sara)=0.5
+
+Lets say email says "Love Life!"
+Who is more likely to have sent it?: Answer Sara due to probabilities of using those words 
+
+What if email was "Life Deal"
+Then the answer is: P(Chris)*P(Chris|Life)*P(Chris|Deal) = 0.5*0.1*0.8=0.04 = P(Chris,"Life Deal")
+					P(Sara)*P(Sara|Life)*P(Sara|Deal) = 0.5*0.3*0.2 = 0.03 = P(Sara,"Life Deal")
+					Therefore Chris is the more likely answer.
+
+Posterior Probability:
+P("Life Deal") = 0.04 + 0.03 = 0.07
+P(Chris|"Life Deal") = 0.04/0.07 = 0.571
+P(Sara|"Life Deal") = 0.03/0.07 = 0.4286
+
+
+Ex. "Love Deal"
+P(Chris,"Love Deal") = P(Chris)*P(Chris|Love)*P(Chris|Deal) = 0.5*0.1*0.8 = 0.04
+P(Sara,"Love Deal") = P(Sara)*P(Sara|Love)*P(Sara|Deal) = 0.5*0.5*0.2= 0.05
+
+
+P(Chris|"Love Deal") = 0.04/0.09 = 0.444
+P(Sara|"Love Deal") 0.05/0.09 = 0.5555
+
+
+It is called Naive Bayes Because for this example it Ignores something important: THe word Order but it is still good enough for most cases
+
+In a large scale, Probability of each word is mulitplied together for each person, muliply in the prior, and then normalize it to get the guess of who sent the email
+
+
+Over View:
+
+Naive Bayes helps solve (Some) Supervised Classification Problems
+
+Naive Bayes is easy to implement and can work well with large feature spaces, like the text example.
+With something like 20,000 - 200,000 words in the english language it can handle it well.
+
+
+Doesnt Work well for phrases like "Chicago Bulls", it only works well for words
+Use Train test and Test set to see if it is the algorithm that fits

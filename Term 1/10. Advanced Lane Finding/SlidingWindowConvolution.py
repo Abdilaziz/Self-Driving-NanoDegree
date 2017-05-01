@@ -72,6 +72,7 @@ if len(window_centroids) > 0:
 	    r_points[(r_points == 255) | ((r_mask == 1) ) ] = 255
 
     # Draw the results
+    print(l_points.shape)
     template = np.array(r_points+l_points,np.uint8) # add both left and right window pixels together
     zero_channel = np.zeros_like(template) # create a zero color channel
     template = np.array(cv2.merge((zero_channel,template,zero_channel)),np.uint8) # make window pixels green

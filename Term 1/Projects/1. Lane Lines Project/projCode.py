@@ -96,9 +96,11 @@ def process_image(image):
 
 	leftYpoint1 = imshape[0]
 	leftXpoint1 = int((leftYpoint1-avgLeftYint)/avgLeftSlope)
+	print(avgLeftSlope)
 
 	leftYpoint2 = 310
 	leftXpoint2 = int((leftYpoint2-avgLeftYint)/avgLeftSlope)
+	print(avgRightSlope)
 
 	cv2.line(line_image,(leftXpoint1,leftYpoint1),(leftXpoint2,leftYpoint2),(255,0,0),10) 
 
@@ -147,15 +149,22 @@ def process_image(image):
 # 	i = i +1
 
 
+inputPath = 'CarND-LaneLines-P1/test_images/'+inputImg+'.jpg'
+outputPath = 'CarND-LaneLines-P1/test_images/'+inputImg + 'Output2'+'.jpg'
+image = mpimg.imread(inputPath)
+outputImage = process_image(image)
+mpimg.imsave(outputPath,outputImage)
+i = i +1
+
 
 
 # Import everything needed to edit/save/watch video clips
-from moviepy.editor import VideoFileClip
-from IPython.display import HTML
+# from moviepy.editor import VideoFileClip
+# from IPython.display import HTML
 
-inputVideo = 'solidYellowLeft'
-video_output = inputVideo + 'output.mp4'
-inputVideoPath = "CarND-LaneLines-P1/"+inputVideo+".mp4"
-clip1 = VideoFileClip(inputVideoPath)
-white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-white_clip.write_videofile(video_output, audio=False)
+# inputVideo = 'solidYellowLeft'
+# video_output = inputVideo + 'output.mp4'
+# inputVideoPath = "CarND-LaneLines-P1/"+inputVideo+".mp4"
+# clip1 = VideoFileClip(inputVideoPath)
+# white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+# white_clip.write_videofile(video_output, audio=False)
