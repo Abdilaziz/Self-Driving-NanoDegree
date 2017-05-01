@@ -43,6 +43,7 @@ def find_matches(img, template_list):
         if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
             top_left = min_loc
         else:
+            # used for other options like correlation where the location of the max value is needed
             top_left = max_loc
         bottom_right = (top_left[0] + w, top_left[1] + h)
         # Append bbox position to list
