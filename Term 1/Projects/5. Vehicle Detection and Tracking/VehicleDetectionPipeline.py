@@ -168,6 +168,8 @@ cars.extend(glob.glob('Datasets/vehicles/KITTI_extracted/*.png'))
 
 data_info = data_look(cars, notcars)
 
+
+
 print('Your function returned a count of', 
       data_info["n_cars"], ' cars and', 
       data_info["n_notcars"], ' non-cars')
@@ -182,41 +184,60 @@ notcar_ind = np.random.randint(0, len(notcars))
 car_image = mpimg.imread(cars[car_ind])
 notcar_image = mpimg.imread(notcars[notcar_ind])
 
-# plotColorSpaces(car_image, data_info["image_shape"],'Car')
-# plotColorSpaces(notcar_image, data_info["image_shape"], 'NotCar')
 
 
-colorspace = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+
+#Spatial Binning
+spatial_size = (32, 32)
+
+# Histogram of Color
+hist_bins = 32
+hist_range = (0, 256)
+feature_vec = True
+
+# Histogram of Orientations Parameters
+colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9
 pix_per_cell = 8
 cell_per_block = 2
 hog_channel = 0 # Can be 0, 1, 2, or "ALL"
 
-t=time.time()
+t = time.time()
 
-car_features, car_hog_image = get_hog_features(car_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
-notcar_features, notcar_hog_image = get_hog_features(notcar_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
 
-# car_features = extract_features([cars[car_ind]], cspace=colorspace, orient=orient, 
-#                         pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, 
-#                         hog_channel=hog_channel, feature_vec=True)
-# notcar_features = extract_features([notcars[notcar_ind]], cspace=colorspace, orient=orient, 
-#                         pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, 
-#                         hog_channel=hog_channel, feature_vec=True)
+# Extract all features that will be used by the classifier.
+car_features = extract_features(cars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+notcar_features = extract_features(notcars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+
+
+# car_features, car_hog_image = get_hog_features(car_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+# notcar_features, notcar_hog_image = get_hog_features(notcar_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+
+# plt.imshow(car_hog_image,cmap='gray')
+# plt.show()
+
+# plt.imshow(notcar_hog_image,cmap='gray')
+# plt.show()
+
+
 
 
 t2 = time.time()
+#Generally (RGB Colorspace) 48.31s to Extract HOG Features for all images.
+# LUV Colorspace is 52.8s
 print(round(t2-t, 2), 'Seconds to extract HOG features...')
 
-plt.imshow(car_hog_image,cmap='gray')
-plt.show()
-
-plt.imshow(notcar_hog_image,cmap='gray')
-plt.show()
-
-# Vehicle Detection
+print( ( len(car_features)*len(car_features[0]) ) )
 
 
-# Feature Detection
+# Training the Classifier
+
+
+
+
+
+
+
+
 
 
