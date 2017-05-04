@@ -2,10 +2,14 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from skimage.feature import hog
+from sklearn.preprocessing import StandardScaler
+from sklearn.cross_validation import train_test_split
+from sklearn.svm import LinearSVC
 import numpy as np
 import cv2
 import time
 import glob
+import pickle
 
 # Define a function to return some characteristics of the dataset 
 def data_look(car_list, notcar_list):
@@ -152,40 +156,115 @@ def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_bloc
     # Return list of feature vectors
     return features
 
+def normalize_Features(features):
+    features = np.array(features)                   
+    # Fit a per-column scaler
+    X_scaler = StandardScaler().fit(features)
+    # Apply the scaler to X
+    scaled_X = X_scaler.transform(features)
+    return scaled_X
 
-# Read all the images downloaded
-notcars = glob.glob('Datasets/non-vehicles/GTI/*.png')
-notcars.extend(glob.glob('Datasets/non-vehicles/Extras/*.png'))
+def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range=(0, 256), feature_vec=True):
 
-cars = glob.glob('Datasets/vehicles/GTI_Far/*.png')
-cars.extend(glob.glob('Datasets/vehicles/GTI_Left/*.png'))
-cars.extend(glob.glob('Datasets/vehicles/GTI_MiddleClose/*.png'))
-cars.extend(glob.glob('Datasets/vehicles/GTI_Right/*.png'))
-cars.extend(glob.glob('Datasets/vehicles/GTI_Left/*.png'))
-cars.extend(glob.glob('Datasets/vehicles/KITTI_extracted/*.png'))
+    # Read all the images downloaded
+    notcars = glob.glob('Datasets/non-vehicles/GTI/*.png')
+    notcars.extend(glob.glob('Datasets/non-vehicles/Extras/*.png'))
 
-
-
-data_info = data_look(cars, notcars)
-
-
-
-print('Your function returned a count of', 
-      data_info["n_cars"], ' cars and', 
-      data_info["n_notcars"], ' non-cars')
-print('of size: ',data_info["image_shape"], ' and data type:', 
-      data_info["data_type"])
-
-# Just for fun choose random car / not-car indices and plot example images   
-car_ind = np.random.randint(0, len(cars))
-notcar_ind = np.random.randint(0, len(notcars))
-    
-# Read in car / not-car images
-car_image = mpimg.imread(cars[car_ind])
-notcar_image = mpimg.imread(notcars[notcar_ind])
+    cars = glob.glob('Datasets/vehicles/GTI_Far/*.png')
+    cars.extend(glob.glob('Datasets/vehicles/GTI_Left/*.png'))
+    cars.extend(glob.glob('Datasets/vehicles/GTI_MiddleClose/*.png'))
+    cars.extend(glob.glob('Datasets/vehicles/GTI_Right/*.png'))
+    cars.extend(glob.glob('Datasets/vehicles/GTI_Left/*.png'))
+    cars.extend(glob.glob('Datasets/vehicles/KITTI_extracted/*.png'))
 
 
 
+    data_info = data_look(cars, notcars)
+
+
+
+    print('Your function returned a count of', 
+          data_info["n_cars"], ' cars and', 
+          data_info["n_notcars"], ' non-cars')
+    print('of size: ',data_info["image_shape"], ' and data type:', 
+          data_info["data_type"])
+
+
+
+    t = time.time()
+
+
+    # Extract all features that will be used by the classifier.
+    car_features = extract_features(cars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+    notcar_features = extract_features(notcars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+
+
+    # car_features, car_hog_image = get_hog_features(car_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+    # notcar_features, notcar_hog_image = get_hog_features(notcar_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
+
+    # plt.imshow(car_hog_image,cmap='gray')
+    # plt.show()
+
+    # plt.imshow(notcar_hog_image,cmap='gray')
+    # plt.show()
+
+
+    t2 = time.time()
+    #Generally (RGB Colorspace) 48.31s to Extract All Features for all images.
+    # LUV Colorspace is 52.8s
+    print(round(t2-t, 2), 'Seconds to extract All features...')
+
+    # Training the Classifier
+
+    # Normalize Data and turn the features vector into an array of each feature stacked
+    X = np.vstack((car_features, notcar_features)).astype(np.float64)                        
+    # Fit a per-column scaler
+    X_scaler = StandardScaler().fit(X)
+    # Apply the scaler to X
+    scaled_X = X_scaler.transform(X)
+
+    # Define the labels vector
+    y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
+
+
+    # Split up data into randomized training and test sets
+    rand_state = np.random.randint(0, 100)
+    X_train, X_test, y_train, y_test = train_test_split(
+        scaled_X, y, test_size=0.2, random_state=rand_state)
+
+
+    print('Using:',orient,'orientations',pix_per_cell,
+        'pixels per cell and', cell_per_block,'cells per block')
+    print('Feature vector length:', len(X_train[0]))
+
+
+    # Use a linear SVC 
+    svc = LinearSVC()
+    # Check the training time for the SVC
+    t=time.time()
+    svc.fit(X_train, y_train)
+    t2 = time.time()
+    print(round(t2-t, 2), 'Seconds to train SVC...')
+    # Check the score of the SVC
+    print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+    # Check the prediction time for a single sample
+    t=time.time()
+    n_predict = 10
+    print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+    print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+    t2 = time.time()
+    print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+
+    print('Saving Model in '+pickleName)
+
+    pickle.dump( svc, open(pickleName, "wb" ))
+
+
+
+VehicleDetectionPickle = 'VehicleDetection.p'
+
+# Initialize Values used for feature extraction
+# Be sure to delete the current pickle file in order to reconfigure the trained classifier.
 
 #Spatial Binning
 spatial_size = (32, 32)
@@ -193,7 +272,6 @@ spatial_size = (32, 32)
 # Histogram of Color
 hist_bins = 32
 hist_range = (0, 256)
-feature_vec = True
 
 # Histogram of Orientations Parameters
 colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
@@ -202,38 +280,30 @@ pix_per_cell = 8
 cell_per_block = 2
 hog_channel = 0 # Can be 0, 1, 2, or "ALL"
 
+
+try:
+    classifier = pickle.load(open(VehicleDetectionPickle, "rb"))
+    print('Using {}'.format(VehicleDetectionPickle))
+except (OSError, IOError) as e:
+    print("{} doesn't exist. Training the Classifier Now".format(VehicleDetectionPickle))
+    classifier = train_Classifier(VehicleDetectionPickle,cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
+
+
+images = glob.glob('VehiclesAndNonVehicles/*.png')
+
+
 t = time.time()
 
 
 # Extract all features that will be used by the classifier.
-car_features = extract_features(cars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
-notcar_features = extract_features(notcars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
-
-
-# car_features, car_hog_image = get_hog_features(car_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
-# notcar_features, notcar_hog_image = get_hog_features(notcar_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
-
-# plt.imshow(car_hog_image,cmap='gray')
-# plt.show()
-
-# plt.imshow(notcar_hog_image,cmap='gray')
-# plt.show()
-
-
-
-
+features = extract_features(images, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
+normalized_features = normalize_Features(features)
+predictions = classifier.predict(normalized_features)
 t2 = time.time()
-#Generally (RGB Colorspace) 48.31s to Extract HOG Features for all images.
-# LUV Colorspace is 52.8s
-print(round(t2-t, 2), 'Seconds to extract HOG features...')
-
-print( ( len(car_features)*len(car_features[0]) ) )
-
-
-# Training the Classifier
-
-
-
+n_predict = len(images)
+print(round(t2-t, 5), 'Seconds to predict', n_predict, 'Images')
+print('My SVC predicts: ', predictions)
+print('For these',n_predict, 'labels: ', [image.split('\\')[-1] for image in images])
 
 
 
