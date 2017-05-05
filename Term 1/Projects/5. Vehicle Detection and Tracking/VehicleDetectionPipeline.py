@@ -1,3 +1,6 @@
+#!/usr/bin/env python -W ignore::DeprecationWarning
+
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -156,12 +159,57 @@ def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_bloc
     # Return list of feature vectors
     return features
 
-def normalize_Features(features):
-    features = np.array(features)                   
-    # Fit a per-column scaler
-    X_scaler = StandardScaler().fit(features)
+# Define a function to extract features from a single image window
+# This function is very similar to extract_features()
+# just for a single image rather than list of images
+def single_img_features(img, cspace='RGB', spatial_size=(32, 32), hist_bins=32, orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, hist_range=(0, 256),spatial_feat=True, hist_feat=True, hog_feat=True):    
+    #1) Define an empty list to receive features
+    img_features = []
+    #2) Apply color conversion if other than 'RGB'
+    if cspace != 'RGB':
+        if cspace == 'HSV':
+            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        elif cspace == 'LUV':
+            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+        elif cspace == 'HLS':
+            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+        elif cspace == 'YUV':
+            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+        elif cspace == 'YCrCb':
+            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
+    else: feature_image = np.copy(img)      
+    #3) Compute spatial features if flag is set
+    if spatial_feat == True:
+        spatial_features = bin_spatial(feature_image, size=spatial_size)
+        #4) Append features to list
+        img_features.append(spatial_features)
+    #5) Compute histogram features if flag is set
+    if hist_feat == True:
+        hist_features = color_hist(feature_image, nbins=hist_bins, bins_range=hist_range)
+        #6) Append features to list
+        img_features.append(hist_features)
+    #7) Compute HOG features if flag is set
+    if hog_feat == True:
+        if hog_channel == 'ALL':
+            hog_features = []
+            for channel in range(feature_image.shape[2]):
+                hog_features.extend(get_hog_features(feature_image[:,:,channel], 
+                                    orient, pix_per_cell, cell_per_block, 
+                                    vis=False, feature_vec=True))      
+        else:
+            hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
+                        pix_per_cell, cell_per_block, vis=False, feature_vec=True)
+        #8) Append features to list
+        img_features.append(hog_features)
+
+    #9) Return concatenated array of features
+    return np.concatenate(img_features)
+
+def normalize_Scale_Features(features, scaler, reshape = False):
+    if reshape == True:
+        features = scaler.transform(np.array(features).reshape(1, -1))
     # Apply the scaler to X
-    scaled_X = X_scaler.transform(features)
+    scaled_X = scaler.transform(features)
     return scaled_X
 
 def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range=(0, 256), feature_vec=True):
@@ -195,8 +243,8 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
 
 
     # Extract all features that will be used by the classifier.
-    car_features = extract_features(cars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
-    notcar_features = extract_features(notcars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+    car_features = extract_features(cars, cspace=cspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
+    notcar_features = extract_features(notcars, cspace=cspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
 
 
     # car_features, car_hog_image = get_hog_features(car_image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True, feature_vec=True)
@@ -220,6 +268,7 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
     X = np.vstack((car_features, notcar_features)).astype(np.float64)                        
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
+
     # Apply the scaler to X
     scaled_X = X_scaler.transform(X)
 
@@ -257,12 +306,183 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
 
     print('Saving Model in '+pickleName)
 
-    pickle.dump( svc, open(pickleName, "wb" ))
+
+    dist_pickle = {}
+
+    dist_pickle['scaler'] = X_scaler
+    dist_pickle['classifier'] = svc
+
+    pickle.dump( dist_pickle, open(pickleName, "wb" ))
+
+    return svc, X_scaler
+
+# Define a function that takes an image,
+# start and stop positions in both x and y, 
+# window size (x and y dimensions),  
+# and overlap fraction (for both x and y)
+def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None], xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
+    # If x and/or y start/stop positions not defined, set to image size
+    if x_start_stop[0] == None:
+        x_start_stop[0] = 0
+    if x_start_stop[1] == None:
+        x_start_stop[1] = img.shape[1]
+    if y_start_stop[0] == None:
+        y_start_stop[0] = 0
+    if y_start_stop[1] == None:
+        y_start_stop[1] = img.shape[0]
+    # Compute the span of the region to be searched    
+    xspan = x_start_stop[1] - x_start_stop[0]
+    yspan = y_start_stop[1] - y_start_stop[0]
+    # Compute the number of pixels per step in x/y
+    nx_pix_per_step = np.int(xy_window[0]*(1 - xy_overlap[0]))
+    ny_pix_per_step = np.int(xy_window[1]*(1 - xy_overlap[1]))
+    # Compute the number of windows in x/y
+    nx_buffer = np.int(xy_window[0]*(xy_overlap[0]))
+    ny_buffer = np.int(xy_window[1]*(xy_overlap[1]))
+    nx_windows = np.int((xspan-nx_buffer)/nx_pix_per_step)
+    ny_windows = np.int((yspan-ny_buffer)/ny_pix_per_step)
+    # Initialize a list to append window positions to
+    window_list = []
+    # Loop through finding x and y window positions
+    # Note: you could vectorize this step, but in practice
+    # you'll be considering windows one by one with your
+    # classifier, so looping makes sense
+    for ys in range(ny_windows):
+        for xs in range(nx_windows):
+            # Calculate window position
+            startx = xs*nx_pix_per_step + x_start_stop[0]
+            endx = startx + xy_window[0]
+            starty = ys*ny_pix_per_step + y_start_stop[0]
+            endy = starty + xy_window[1]
+            # Append window position to list
+            window_list.append(((startx, starty), (endx, endy)))
+    # Return the list of windows
+    return window_list
+
+# Here is your draw_boxes function from the previous exercise
+def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
+    # Make a copy of the image
+    imcopy = np.copy(img)
+    # Iterate through the bounding boxes
+    for bbox in bboxes:
+        # Draw a rectangle given bbox coordinates
+        cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+    # Return the image copy with boxes drawn
+    return imcopy
+
+def detect_vehicles(image, classifier, scaler):
+
+    # Notes: when y is roughly 400px, scale should be roughly 40x40 or smaller.
+    # have the multi scale windows overlapping due to depth of vehciles in lanes isn't only apparent through a vertical pixel measurement
+
+    # window_scales = 5
+    windows = []
+
+    small_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=[400, 450], xy_window=(32, 32), xy_overlap=(0.25, 0.25))
+
+    medium_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=[430, 500], xy_window=(64, 64), xy_overlap=(0.25, 0.25))
+
+    large_windows = slide_window(image, x_start_stop=[None, None], y_start_stop=[400, None], xy_window=(128, 128), xy_overlap=(0.25, 0.25))
+
+    windows.extend(small_windows)
+    windows.extend(medium_windows)
+    windows.extend(large_windows)
+
+    detectedWindows = []
+    # t = time.time()
+    for window in windows:
+
+        #get image of the window
+        window_img = cv2.resize(image[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
+
+        # # Extract all features that will be used by the classifier at every window.
+        features = single_img_features(window_img, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
+        
+        normalized_features = normalize_Scale_Features(features, scaler=scaler, reshape= True)
+        prediction = classifier.predict(normalized_features)
+        if prediction[0] == 1.:
+            detectedWindows.append(window)
+
+
+    # t2 = time.time()
+    # print('The number of windows searched is ', len(windows))
+    # print('The number of windows with vehicles detected is ', len(detectedWindows))
+    # print(round(t2-t, 5), 'Seconds to predict one whole image Image')
+
+    return detectedWindows
+
+def draw_detections(image,classifier,scaler, plot=False):
+
+    detectedWindows = detect_vehicles(image, classifier, scaler)
+
+    window_img = draw_boxes(image, detectedWindows, color=(0, 0, 255), thick=6)
+
+    if plot == True:
+        plt.imshow(window_img)
+        plt.show()
+    return window_img
+
+def run_Image(classifier, scaler):
+    image = mpimg.imread('CarND-Vehicle-Detection-master/test_images/test5.jpg')
+
+    draw_detections(image, classifier, scaler, plot=True)
+
+
+def run_Video(classifier, scaler):
+
+    from moviepy.editor import VideoFileClip, ImageSequenceClip
+
+    inputVideo = 'test_video'
+    video_output = inputVideo + 'output.mp4'
+    inputVideoPath = "CarND-Vehicle-Detection-master/"+inputVideo+".mp4"
+    clip1 = VideoFileClip(inputVideoPath)
+
+    new_frames = []
+    
+    # testing processing on a short section of the video
+    # clip1 = clip1.subclip(38, 42)
+
+    print('Processing Each Frame of the Video')
+    for frame in clip1.iter_frames():
+
+        result = draw_detections(frame, classifier, scaler)
+
+        new_frames.append(result)
+
+
+
+    new_clip = ImageSequenceClip(new_frames, fps=clip1.fps)
+    new_clip.write_videofile(video_output)
+
+
+# Keep track of windows from frame to frame
+# Dont Draw boxes of cars if they are not consistant from frame to frame to filter out false positives
+# combine multiple boxes around a vehicle around its centroid to have one bounding box per vehicle.
+
+
+# class Vehicle():
+#     def __init__(self):
+        
+
+#         self.latest_windows = []
+#         self.latest_window = None 
+
+#         self.filtered_windows = 
+
+    
+
+#     def update(windows):
+#         self.latest_window = windows
+#         n= 10
+#         self.latest_windows = self.latest_windows.append(self.latest_window)
+#         if (len(self.latest_windows) > n):
+#             self.latest_windows = self.latest_windows[1:]
 
 
 
 VehicleDetectionPickle = 'VehicleDetection.p'
 
+print('')
 # Initialize Values used for feature extraction
 # Be sure to delete the current pickle file in order to reconfigure the trained classifier.
 
@@ -274,36 +494,42 @@ hist_bins = 32
 hist_range = (0, 256)
 
 # Histogram of Orientations Parameters
-colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+colorspace = 'HLS' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9
 pix_per_cell = 8
 cell_per_block = 2
-hog_channel = 0 # Can be 0, 1, 2, or "ALL"
+hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
 
 
 try:
-    classifier = pickle.load(open(VehicleDetectionPickle, "rb"))
+    dist_pickle = pickle.load(open(VehicleDetectionPickle, "rb"))
+    classifier = dist_pickle['classifier']
+    scaler = dist_pickle['scaler']
     print('Using {}'.format(VehicleDetectionPickle))
 except (OSError, IOError) as e:
     print("{} doesn't exist. Training the Classifier Now".format(VehicleDetectionPickle))
-    classifier = train_Classifier(VehicleDetectionPickle,cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
+    classifier, scaler= train_Classifier(VehicleDetectionPickle, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
 
 
-images = glob.glob('VehiclesAndNonVehicles/*.png')
+run_Video(classifier, scaler)
 
 
-t = time.time()
+# images = glob.glob('VehiclesAndNonVehicles/*.png')
 
 
-# Extract all features that will be used by the classifier.
-features = extract_features(images, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
-normalized_features = normalize_Features(features)
-predictions = classifier.predict(normalized_features)
-t2 = time.time()
-n_predict = len(images)
-print(round(t2-t, 5), 'Seconds to predict', n_predict, 'Images')
-print('My SVC predicts: ', predictions)
-print('For these',n_predict, 'labels: ', [image.split('\\')[-1] for image in images])
+# t = time.time()
+# # Extract all features that will be used by the classifier.
+# features = extract_features(images, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range)
+# normalized_features = normalize_Scale_Features(features, scaler=scaler, reshape= False)
+# predictions = classifier.predict(normalized_features)
+# t2 = time.time()
+
+
+# n_predict = len(images)
+
+# print(round(t2-t, 5), 'Seconds to predict', n_predict, 'Images')
+# print('My SVC predicts: ', predictions)
+# print('For these',n_predict, 'labels: ', [image.split('\\')[-1] for image in images])
 
 
 
