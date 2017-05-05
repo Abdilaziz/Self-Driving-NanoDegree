@@ -63,7 +63,7 @@ training_generator = generator(training_samples, batch_size=batch_size)
 validation_generator = generator(validation_samples, batch_size=batch_size)
 
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Lambda, Cropping2D, Convolution2D
+from keras.layers import Flatten, Dense, Lambda, Cropping2D, Convolution2D, Dropout
 
 model = Sequential()
 # Normalize the input. Image values are made to have values from 0 to 1 and then they are mean centered by subtracted by 0.5 to make the mean 0
@@ -101,6 +101,8 @@ model.add(Convolution2D(64,3,3,subsample=(1,1),activation='relu'))
 
 model.add(Flatten()) 
 model.add(Dense(100)) # a Fully Conected Layers
+# set 10% of the values to 0
+model.add(Dropout(0.05))
 model.add(Dense(50))
 model.add(Dense(10))
 
