@@ -340,42 +340,42 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
 
 # def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None], xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
     # If x and/or y start/stop positions not defined, set to image size
-    if x_start_stop[0] == None:
-        x_start_stop[0] = 0
-    if x_start_stop[1] == None:
-        x_start_stop[1] = img.shape[1]
-    if y_start_stop[0] == None:
-        y_start_stop[0] = 0
-    if y_start_stop[1] == None:
-        y_start_stop[1] = img.shape[0]
-    # Compute the span of the region to be searched    
-    xspan = x_start_stop[1] - x_start_stop[0]
-    yspan = y_start_stop[1] - y_start_stop[0]
-    # Compute the number of pixels per step in x/y
-    nx_pix_per_step = np.int(xy_window[0]*(1 - xy_overlap[0]))
-    ny_pix_per_step = np.int(xy_window[1]*(1 - xy_overlap[1]))
-    # Compute the number of windows in x/y
-    nx_buffer = np.int(xy_window[0]*(xy_overlap[0]))
-    ny_buffer = np.int(xy_window[1]*(xy_overlap[1]))
-    nx_windows = np.int((xspan-nx_buffer)/nx_pix_per_step)
-    ny_windows = np.int((yspan-ny_buffer)/ny_pix_per_step)
-    # Initialize a list to append window positions to
-    window_list = []
-    # Loop through finding x and y window positions
-    # Note: you could vectorize this step, but in practice
-    # you'll be considering windows one by one with your
-    # classifier, so looping makes sense
-    for ys in range(ny_windows):
-        for xs in range(nx_windows):
-            # Calculate window position
-            startx = xs*nx_pix_per_step + x_start_stop[0]
-            endx = startx + xy_window[0]
-            starty = ys*ny_pix_per_step + y_start_stop[0]
-            endy = starty + xy_window[1]
-            # Append window position to list
-            window_list.append(((startx, starty), (endx, endy)))
-    # Return the list of windows
-    return window_list
+    # if x_start_stop[0] == None:
+    #     x_start_stop[0] = 0
+    # if x_start_stop[1] == None:
+    #     x_start_stop[1] = img.shape[1]
+    # if y_start_stop[0] == None:
+    #     y_start_stop[0] = 0
+    # if y_start_stop[1] == None:
+    #     y_start_stop[1] = img.shape[0]
+    # # Compute the span of the region to be searched    
+    # xspan = x_start_stop[1] - x_start_stop[0]
+    # yspan = y_start_stop[1] - y_start_stop[0]
+    # # Compute the number of pixels per step in x/y
+    # nx_pix_per_step = np.int(xy_window[0]*(1 - xy_overlap[0]))
+    # ny_pix_per_step = np.int(xy_window[1]*(1 - xy_overlap[1]))
+    # # Compute the number of windows in x/y
+    # nx_buffer = np.int(xy_window[0]*(xy_overlap[0]))
+    # ny_buffer = np.int(xy_window[1]*(xy_overlap[1]))
+    # nx_windows = np.int((xspan-nx_buffer)/nx_pix_per_step)
+    # ny_windows = np.int((yspan-ny_buffer)/ny_pix_per_step)
+    # # Initialize a list to append window positions to
+    # window_list = []
+    # # Loop through finding x and y window positions
+    # # Note: you could vectorize this step, but in practice
+    # # you'll be considering windows one by one with your
+    # # classifier, so looping makes sense
+    # for ys in range(ny_windows):
+    #     for xs in range(nx_windows):
+    #         # Calculate window position
+    #         startx = xs*nx_pix_per_step + x_start_stop[0]
+    #         endx = startx + xy_window[0]
+    #         starty = ys*ny_pix_per_step + y_start_stop[0]
+    #         endy = starty + xy_window[1]
+    #         # Append window position to list
+    #         window_list.append(((startx, starty), (endx, endy)))
+    # # Return the list of windows
+    # return window_list
 
 # Here is your draw_boxes function from the previous exercise
 def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
@@ -480,8 +480,9 @@ def convert_color(image, cspace):
 # Algorithm for finding HOG features once for the whole image rather than per cell, and finding the other features per cell and classifying it rather than
 
 
-def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orient=9, pix_per_cell=8, cell_per_block=2, spatial_size=(32, 32), hist_bins=32, hist_range= (0,256)):
+def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range= (0,256)):
     
+
     windows = []
 
     draw_img = np.copy(img)
@@ -514,20 +515,35 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
     
     # Compute individual channel HOG features for the entire image
-    hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    
+ 
+    if hog_channel == 0:
+        hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    elif hog_channel == 1:
+        hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    elif hog_channel == 2:
+        hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    else:
+        hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
+        hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
+        hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+
     for xb in range(nxsteps):
         for yb in range(nysteps):
             ypos = yb*cells_per_step
             xpos = xb*cells_per_step
 
             # Extract HOG for this patch
-            hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-            hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-            hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-            hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
+            if hog_channel == 0:
+                hog_features = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+            elif hog_channel == 1:
+                hog_features = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+            elif hog_channel == 2:
+                hog_features = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+            else:
+                hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
 
             xleft = xpos*pix_per_cell
             ytop = ypos*pix_per_cell
@@ -535,7 +551,17 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
 
             # Extract the image patch
             subimg = cv2.resize(ctrans_tosearch[ytop:ytop+window, xleft:xleft+window], (64,64))
-          
+                
+
+
+            # xbox_left = np.int(xleft*scale)
+            # ytop_draw = np.int(ytop*scale)
+            # win_draw = np.int(window*scale)
+            # windows.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
+
+
+
+
             # Get color features
             spatial_features = bin_spatial(subimg, size=spatial_size)
             hist_features = color_hist(subimg, nbins=hist_bins, bins_range=hist_range)
@@ -557,7 +583,7 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
 
 
 from scipy.ndimage.measurements import label
-def heatMap_Detections(image, box_list):
+def heatMap_Detections(image, box_list, heatMaps=None):
 
     heat = np.zeros_like(image[:,:,0]).astype(np.float)
 
@@ -582,24 +608,28 @@ def heatMap_Detections(image, box_list):
     heat = add_heat(heat,box_list)
         
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat,1)
-
+    # heat = apply_threshold(heat,3)
     # Visualize the heatmap when displaying    
     heatmap = np.clip(heat, 0, 255)
 
+    if (heatMaps != None):
+        heatMaps.updateHeatMap(heatmap)
+        heatmap = heatMaps.avg_heatmap
+
+    # Apply threshold to help remove false positives
+    heatmap = apply_threshold(heatmap,3)
+
+    # plt.imshow(heatmap, cmap='hot')
+    # plt.show()
+
+
+
+
     return heatmap
 
-    # fig = plt.figure()
-    # plt.subplot(121)
-    # plt.imshow(draw_img)
-    # plt.title('Car Positions')
-    # plt.subplot(122)
-    # plt.imshow(heatmap, cmap='hot')
-    # plt.title('Heat Map')
-    # fig.tight_layout()
-
-def draw_labeled_bboxes(img, labels):
+def draw_labeled_bboxes(img, labels, heatMaps=None):
     # Iterate through all detected cars
+    bboxes = []
     for car_number in range(1, labels[1]+1):
         # Find pixels with each car_number label value
         nonzero = (labels[0] == car_number).nonzero()
@@ -608,89 +638,122 @@ def draw_labeled_bboxes(img, labels):
         nonzerox = np.array(nonzero[1])
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
-        # Draw the box on the image
-        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 6)
-    # Return the image
-    return img
+        bboxes.append(bbox)
 
-def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
+            
+        # Draw the box on the image
+        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 2)
+
+    if (heatMaps!=None):
+        heatMaps.updateCentroid(bboxes, labels[1], img)
+
+    # Return the image
+    return img, heatMaps
+
+def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
 
     ystart = 400
-    ystop = 656
-    scale = 1.5
+    ystop = 550
+    scale = 1
 
     # we can detect cars with multiple scaled windows by running with multiple scale values
     # the smaller the scale, the larger the searched image, meaning more windows are searched, meaning the detection window in the original image is smaller
 
     # detectedWindows = []
-    detectedWindows = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range)
+    detectedWindows = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
-    # scale = 1
-    # detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range)
+    ystart = 500
+    ystop = 656
+    scale = 2
+    detectedWindows1 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
-    # detectedWindows.extend(detectedWindows1)
+    ystart = 450
+    ystop = 550
+    scale = 1.5
+    detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+
+    # scale = 0.5
+    # detectedWindows3 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
+    detectedWindows.extend(detectedWindows1)
+    detectedWindows.extend(detectedWindows2)
+    # detectedWindows.extend(detectedWindows3)
 
-    # window_img = draw_boxes(image, detectedWindows, color=(0, 0, 255), thick=6)
+    # testImage = draw_boxes(image, detectedWindows, color=(0, 0, 255), thick=1)
+    # plt.imshow(testImage)
+    # plt.show()
+    # print('Number of windows detected: ',len(detectedWindows))
 
     # Itegrate the heatMap from frame to frame so areas get cool and hot over time.
-    heatmap = heatMap_Detections(image, detectedWindows)
-
-    if (heatMaps!=None):
-        # if this is a video, use the avg heatmap to draw the boxes.
-
-        heatMaps.update(heatmap)
-
-        heatmap = heatMaps.avg_heatmap
-
+    heatmap = heatMap_Detections(image, detectedWindows, heatMaps)
+    # if (heatMaps!=None):
+    #     # if this is a video, use the avg heatmap to draw the boxes.
+    #     heatMaps.updateHeatMap(heatmap)
+    #     heatmap = heatMaps.avg_heatmap
 
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
 
-    Final_Image = draw_labeled_bboxes(np.copy(image), labels)
-
+    Final_Image, heatMaps = draw_labeled_bboxes(np.copy(image), labels, heatMaps)
     n_cars = labels[1]
+    text1 = 'The Number of cars detected is: ' + str(n_cars)
+    cv2.putText(Final_Image, text1, (430,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
 
-
-    text = 'The Number of cars detected is: ' + str(n_cars)
-    cv2.putText(Final_Image,text, (430,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
 
     if plot == True:
         plt.imshow(Final_Image)
         plt.show()
-    return Final_Image
+    return Final_Image, heatMaps
 
 
-def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range, plot=False):
-    image = mpimg.imread('CarND-Vehicle-Detection-master/test_images/test4.jpg')
+def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False):
+    image = mpimg.imread('CarND-Vehicle-Detection-master/test_images/test6.jpg')
 
-    draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range,  plot=plot)
+    image = image[:,:,:3]
+    # print(image.shape)
 
+    heatMaps = HeatMapTracker()
 
-def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range):
+    t = time.time()
+    result,_ = draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps, plot=plot)
+    t2 = time.time()
+    print(round(t2-t, 5), 'Seconds to predict one whole image Image with HOG window Subsampling')
+
+    if (plot==False):
+        mpimg.imsave('OutputImage.jpg',result)
+
+def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range):
 
     from moviepy.editor import VideoFileClip, ImageSequenceClip
 
-    inputVideo = 'test_video'
+    inputVideo = 'project_video'
     video_output = inputVideo + 'output.mp4'
-    inputVideoPath = "CarND-Vehicle-Detection-master/"+inputVideo+".mp4"
+    inputVideoPath = "CarND-Vehicle-Detection-master/" + inputVideo + ".mp4"
     clip1 = VideoFileClip(inputVideoPath)
 
     new_frames = []
 
+    # count = 0
+
     heatMaps = HeatMapTracker()
     
     # testing processing on a short section of the video
-    # clip1 = clip1.subclip(38, 42)
+    # clip1 = clip1.subclip(13, 16)
 
 
     print('Processing Each Frame of the Video')
     for frame in clip1.iter_frames():
 
-        result = draw_detections2(frame, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range, heatMaps=heatMaps)
+        result, heatMaps = draw_detections2(frame, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps)
+        text = 'The centroids for the vehicles is ' + str(heatMaps.avg_centroid)
+        cv2.putText(result, text, (100,80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
 
         new_frames.append(result)
+
+        # if (count ==1):
+        #     mpimg.imsave('TestFrame.jpg', frame)
+        # count += 1
 
 
 
@@ -704,9 +767,34 @@ class HeatMapTracker():
         self.recent_heatmap = None
         self.recent_n_heatmaps = []
 
-        self.avg_heatmap = None
+        self.recent_centroids = [] # recent centroids. Array length is the number of cars detected in the image
+        self.recent_n_centroids = [] # a 2D array with recent centroid values of each car
 
-    def update(self, heatmap):
+        self.avg_heatmap = None
+        self.avg_centroid = []
+
+        self.numb_totalCars = 0
+
+    def getArrayPlacement(avg_centroid, new_centroid):
+        pixel_window = 65
+
+        curPos = 0
+        for cur_centroid in avg_centroid:
+            lower_centroid_thresh = [cur_centroid[0] - pixel_window , cur_centroid[1] - pixel_window]
+            upper_centroid_thresh = [cur_centroid[0] + pixel_window , cur_centroid[1] + pixel_window]
+
+            # print('Lower Thresh: ', lower_centroid_thresh)
+            # print('Upper Thresh: ', upper_centroid_thresh)
+            # print('New Centroid: ', new_centroid)
+
+            if (lower_centroid_thresh[0] <= new_centroid[0]) & (lower_centroid_thresh[1] < new_centroid[1]) & (upper_centroid_thresh[0] > new_centroid[0]) & (upper_centroid_thresh[1] > new_centroid[1]):
+                # print('Current Position that is in the thresh: ',curPos)
+                return curPos
+            curPos += 1
+
+        return None
+
+    def updateHeatMap(self, heatmap):
 
         n = 15
 
@@ -717,13 +805,85 @@ class HeatMapTracker():
 
         self.avg_heatmap = np.mean(self.recent_n_heatmaps, axis=0)
 
-        self.avg_heatmap[self.avg_heatmap <= 1] = 0
+    def updateCentroid(self, bboxes, total_cars, image):
 
-    # def apply_threshold(self, heatmap, threshold):
-    #     # Zero out pixels below the threshold
-    #     heatmap[heatmap <= threshold] = 0
-    #     # Return thresholded map
-    #     return heatmap
+        n = 15
+
+
+        self.numb_totalCars = total_cars
+
+        for bbox in bboxes:
+            # centroid is (xmin + (xmax - xmin)/2), (ymin + (ymax - ymin)/2)
+            centroid = [ int(bbox[0][0] + (bbox[1][0] - bbox[0][0])/2) , int(bbox[0][1] +  (bbox[1][1] - bbox[0][1])/2)]
+
+
+            arrayPos = HeatMapTracker.getArrayPlacement(self.avg_centroid, centroid)
+
+            if arrayPos == None:
+                arrayPos = len(self.recent_centroids)          
+                self.recent_centroids.append(centroid)
+                self.recent_n_centroids.append([centroid])
+                self.avg_centroid.append(centroid)
+                # print('Length of incresed size centroid array: ', len(self.avg_centroid))
+            else:
+                self.recent_centroids[arrayPos] = centroid
+                self.recent_n_centroids[arrayPos].append(centroid)
+                if (len(self.recent_n_centroids[arrayPos]) > n):
+                    self.recent_n_centroids[arrayPos] = self.recent_n_centroids[arrayPos][1:]
+
+                avg = []
+                for x in zip(*(self.recent_n_centroids[arrayPos])):
+                    avg.append( int( sum(x) / len(x)) )
+                
+                self.avg_centroid[arrayPos] = avg
+
+
+            # print(arrayPos, ' position of centroid is ', self.avg_centroid[arrayPos])
+            HeatMapTracker.drawNumber(image, self.avg_centroid[arrayPos],  arrayPos)
+        if (len(self.avg_centroid) > total_cars):
+            for numb_to_remove in range( (len(self.avg_centroid) - total_cars) ):
+                # print('This is check number: ', numb_to_remove)
+                # a car has left (remove from array) I am removing all the data for now
+                removePos = HeatMapTracker.removeVehicle(self.avg_centroid,bboxes)
+                if (removePos != None):
+                    del self.recent_n_centroids[removePos]
+                    del self.recent_centroids[removePos]
+                    del self.avg_centroid[removePos]
+        # print('')
+
+    def removeVehicle(avg_centroid, bboxes):
+        curPos = 0
+        # print('Need to remove centroid values for cars not detected')
+
+        for cur_centroid in avg_centroid:
+            pixel_window = 30
+            lower_centroid_thresh = [cur_centroid[0] - pixel_window , cur_centroid[1] - pixel_window]
+            upper_centroid_thresh = [cur_centroid[0] + pixel_window , cur_centroid[1] + pixel_window]
+
+            found = False
+
+            for bbox in bboxes:
+                new_centroid = [ int(bbox[0][0] + (bbox[1][0] - bbox[0][0])/2) , int(bbox[0][1] +  (bbox[1][1] - bbox[0][1])/2)]
+                
+                # print('Lower Thresh: ', lower_centroid_thresh)
+                # print('Upper Thresh: ', upper_centroid_thresh)
+                # print('New Centroid: ', new_centroid)
+
+                if  ((lower_centroid_thresh[0] < new_centroid[0]) & (lower_centroid_thresh[1] < new_centroid[1]) & (upper_centroid_thresh[0] > new_centroid[0]) & (upper_centroid_thresh[1] > new_centroid[1])):
+                    # print('Found the current box in the avg')
+                    found = True
+            if found != True:
+                # print('Removing:  ',curPos)
+                return curPos
+            curPos += 1
+        return None
+
+
+    def drawNumber(image, centroid ,arrayPos):
+        pos  = centroid
+        text = str(arrayPos)
+        cv2.putText(image, text, (pos[0],pos[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0),2,cv2.LINE_AA)
+        return image
 
 
 
@@ -741,11 +901,11 @@ new_hist_bins = 32
 new_hist_range = (0, 256)
 
 # Histogram of Orientations Parameters
-new_colorspace = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+new_colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 new_orient = 9
 new_pix_per_cell = 8
 new_cell_per_block = 2
-new_hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
+new_hog_channel = 0 # Can be 0, 1, 2, or "ALL"
 
 
 try:
@@ -798,7 +958,7 @@ print('')
 
 
 
-
+# Change the FUNCTIONS TO TAKE THE hog_Channel VARIABLE AS A PARAMETER
 
 # t = time.time()
 # run_Image(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=True)
@@ -807,7 +967,7 @@ print('')
 
 
 # t = time.time()
-# run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range, plot=True)
+# run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
 # t2 = time.time()
 # print(round(t2-t, 5), 'Seconds to predict one whole image Image with HOG window Subsampling')
 
@@ -815,7 +975,7 @@ print('')
 
 
 
-run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hist_range)
+run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
 
