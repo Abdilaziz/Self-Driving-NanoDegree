@@ -609,7 +609,7 @@ def heatMap_Detections(image, box_list, heatMaps=None):
     heat = add_heat(heat,box_list)
         
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat,2)
+    heat = apply_threshold(heat,1)
     # Visualize the heatmap when displaying    
     heatmap = np.clip(heat, 0, 255)
 
@@ -652,7 +652,7 @@ def draw_labeled_bboxes(img, labels, heatMaps=None):
 def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
 
     ystart = 400
-    ystop = 600
+    ystop = 560
     scale = 1
 
     # we can detect cars with multiple scaled windows by running with multiple scale values
@@ -662,24 +662,24 @@ def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell
     detectedWindows = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
-    ystart = 400
+    ystart = 496
     ystop = 656
-    scale = 1.5
+    scale = 1.5 # 96
     detectedWindows1 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
-    # ystart = 450
-    # ystop = 656
-    # scale = 2
-    # detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+    ystart = 400
+    ystop = 656
+    scale = 2 # 128
+    detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
-    # ystart = 550
-    # ystop = 656
-    # scale = 2
+    # ystart = 400
+    # ystop = 464
+    # scale = 0.5 # 32
     # detectedWindows3 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
     detectedWindows.extend(detectedWindows1)
-    # detectedWindows.extend(detectedWindows2)
+    detectedWindows.extend(detectedWindows2)
     # detectedWindows.extend(detectedWindows3)
 
     # testImage = draw_boxes(image, detectedWindows, color=(0, 0, 255), thick=1)
@@ -713,7 +713,7 @@ def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block,
     
     test_images = glob.glob('CarND-Vehicle-Detection-master/test_images/*.jpg')
     results = []
-
+    # test_images = test_images[-3:-1]
     for fname in test_images:
         image = mpimg.imread(fname)
 
@@ -721,7 +721,7 @@ def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block,
         # print(image.shape)
 
         heatMaps = HeatMapTracker()
-
+        print(fname.split('\\')[-1])
         t = time.time()
         result,_ = draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps, plot=plot)
         t2 = time.time()
@@ -978,7 +978,7 @@ print('')
 
 
 # t = time.time()
-run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
+# run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
 # t2 = time.time()
 # print(round(t2-t, 5), 'Seconds to predict one whole image Image with HOG window Subsampling')
 
@@ -986,7 +986,7 @@ run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_
 
 
 
-# run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
 
