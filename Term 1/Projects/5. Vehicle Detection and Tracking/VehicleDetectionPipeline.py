@@ -58,28 +58,28 @@ def data_look(car_list, notcar_list):
 #     return ax  # return Axes3D object for further manipulation
 
 # def plotColorSpaces(image, shape, imgCategory):
-# 	h, w, d = shape
+#   h, w, d = shape
 
-# 	# Select a small fraction of pixels to plot by subsampling it
-# 	scale = max(h, w, 64) / 64  # at most 64 rows and columns
-# 	img_small = cv2.resize(image, (np.int(h / scale), np.int(w / scale)), interpolation=cv2.INTER_NEAREST)
+#   # Select a small fraction of pixels to plot by subsampling it
+#   scale = max(h, w, 64) / 64  # at most 64 rows and columns
+#   img_small = cv2.resize(image, (np.int(h / scale), np.int(w / scale)), interpolation=cv2.INTER_NEAREST)
 
-# 	# Convert subsampled image to desired color space(s)
-# 	img_small_RGB = img_small # cv2.cvtColor(img_small, cv2.COLOR_BGR2RGB)  # OpenCV uses BGR, matplotlib likes RGB
-# 	img_small_HSV = cv2.cvtColor(img_small, cv2.COLOR_RGB2HSV)
-# 	img_small_LUV = cv2.cvtColor(img_small, cv2.COLOR_RGB2LUV)
-# 	img_small_rgb = img_small_RGB / 255.  # scaled to [0, 1], only for plotting
+#   # Convert subsampled image to desired color space(s)
+#   img_small_RGB = img_small # cv2.cvtColor(img_small, cv2.COLOR_BGR2RGB)  # OpenCV uses BGR, matplotlib likes RGB
+#   img_small_HSV = cv2.cvtColor(img_small, cv2.COLOR_RGB2HSV)
+#   img_small_LUV = cv2.cvtColor(img_small, cv2.COLOR_RGB2LUV)
+#   img_small_rgb = img_small_RGB / 255.  # scaled to [0, 1], only for plotting
 
 
-# 	# Plot and show
-# 	plot3d(img_small_RGB, img_small_rgb)
-# 	plt.savefig(imgCategory +'RGB.jpg')
+#   # Plot and show
+#   plot3d(img_small_RGB, img_small_rgb)
+#   plt.savefig(imgCategory +'RGB.jpg')
 
-# 	plot3d(img_small_HSV, img_small_rgb, axis_labels=list("HSV"))
-# 	plt.savefig(imgCategory + 'HSV.jpg')
+#   plot3d(img_small_HSV, img_small_rgb, axis_labels=list("HSV"))
+#   plt.savefig(imgCategory + 'HSV.jpg')
 
-# 	plot3d(img_small_LUV, img_small_rgb, axis_labels=list("LUV"))
-# 	plt.savefig(imgCategory+ 'LUV.jpg')
+#   plot3d(img_small_LUV, img_small_rgb, axis_labels=list("LUV"))
+#   plt.savefig(imgCategory+ 'LUV.jpg')
 
 # Define a function to compute binned color features  
 def bin_spatial(img, size=(32, 32)):
@@ -607,9 +607,9 @@ def heatMap_Detections(image, box_list, heatMaps=None):
 
     # Add heat to each box in box list
     heat = add_heat(heat,box_list)
-        
+
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat,2)
+    # heat = apply_threshold(heat, 0) # 3
     # Visualize the heatmap when displaying    
     heatmap = np.clip(heat, 0, 255)
 
@@ -618,13 +618,13 @@ def heatMap_Detections(image, box_list, heatMaps=None):
         heatmap = heatMaps.avg_heatmap
 
     # Apply threshold to help remove false positives
-    # heatmap = apply_threshold(heatmap,1)
+    heatmap = apply_threshold(heatmap, 4)
 
     # plt.imshow(heatmap, cmap='hot')
     # plt.show()
 
 
-    return heatmap
+    return heatmap, heatMaps
 
 def draw_labeled_bboxes(img, labels, heatMaps=None):
     # Iterate through all detected cars
@@ -649,11 +649,11 @@ def draw_labeled_bboxes(img, labels, heatMaps=None):
     # Return the image
     return img, heatMaps
 
-def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
+def draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
 
-    ystart = 400
-    ystop = 600
-    scale = 1
+    ystart = 400 # 420
+    ystop = 656 # 548 
+    scale = 2 # 1
 
     # we can detect cars with multiple scaled windows by running with multiple scale values
     # the smaller the scale, the larger the searched image, meaning more windows are searched, meaning the detection window in the original image is smaller
@@ -661,25 +661,35 @@ def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell
     # detectedWindows = []
     detectedWindows = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
+    # print(len(detectedWindows))
 
     ystart = 400
-    ystop = 656
-    scale = 1.5
+    ystop = 550
+    scale = 1.5 # 96
     detectedWindows1 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+
+    ystart = 400
+    ystop = 500
+    scale = 1
+    detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
     # ystart = 450
     # ystop = 656
-    # scale = 2
-    # detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+    # scale = 2 # 32
+    # detectedWindows3 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
-    # ystart = 550
-    # ystop = 656
-    # scale = 2
+    # ystart = 400
+    # ystop = 416
+    # scale = 1 # 32
     # detectedWindows3 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
     detectedWindows.extend(detectedWindows1)
-    # detectedWindows.extend(detectedWindows2)
+    # print(len(detectedWindows))
+
+    detectedWindows.extend(detectedWindows2)
+    # print(len(detectedWindows))
+
     # detectedWindows.extend(detectedWindows3)
 
     # testImage = draw_boxes(image, detectedWindows, color=(0, 0, 255), thick=1)
@@ -688,7 +698,7 @@ def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell
     # print('Number of windows detected: ',len(detectedWindows))
 
     # Itegrate the heatMap from frame to frame so areas get cool and hot over time.
-    heatmap = heatMap_Detections(image, detectedWindows, heatMaps)
+    heatmap, heatMaps = heatMap_Detections(image, detectedWindows, heatMaps)
     # if (heatMaps!=None):
     #     # if this is a video, use the avg heatmap to draw the boxes.
     #     heatMaps.updateHeatMap(heatmap)
@@ -709,19 +719,19 @@ def draw_detections2(image,classifier,scaler, cspace, orient, pix_per_cell, cell
     return Final_Image, heatMaps
 
 
-def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False):
+def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=None, plot=False):
     
     test_images = glob.glob('CarND-Vehicle-Detection-master/test_images/*.jpg')
     results = []
-
+    # test_images = test_images[1:2]
     for fname in test_images:
         image = mpimg.imread(fname)
 
         image = image[:,:,:3]
         # print(image.shape)
 
-        heatMaps = HeatMapTracker()
-
+        # heatMaps = HeatMapTracker()
+        print(fname.split('\\')[-1])
         t = time.time()
         result,_ = draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps, plot=plot)
         t2 = time.time()
@@ -750,7 +760,7 @@ def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, 
     heatMaps = HeatMapTracker()
     
     # testing processing on a short section of the video
-    # clip1 = clip1.subclip(20, 23)
+    # clip1 = clip1.subclip(5, 15)
 
 
     print('Processing Each Frame of the Video')
@@ -787,7 +797,7 @@ class HeatMapTracker():
         self.numb_totalCars = 0
 
     def getArrayPlacement(avg_centroid, new_centroid):
-        pixel_window = 65
+        pixel_window = 50
 
         curPos = 0
         for cur_centroid in avg_centroid:
@@ -807,7 +817,7 @@ class HeatMapTracker():
 
     def updateHeatMap(self, heatmap):
 
-        n = 15
+        n = 10
 
         self.recent_heatmap = heatmap
         self.recent_n_heatmaps.append(heatmap)
@@ -818,7 +828,7 @@ class HeatMapTracker():
 
     def updateCentroid(self, bboxes, total_cars, image):
 
-        n = 15
+        n = 20
 
 
         self.numb_totalCars = total_cars
@@ -912,11 +922,11 @@ new_hist_bins = 32
 new_hist_range = (0, 256)
 
 # Histogram of Orientations Parameters
-new_colorspace = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+new_colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 new_orient = 9
 new_pix_per_cell = 8
 new_cell_per_block = 2
-new_hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
+new_hog_channel = 0 # Can be 0, 1, 2, or "ALL"
 
 
 try:
@@ -960,8 +970,8 @@ print('The Models accuracy is', model_score)
 
 
 print('')
-print('Using:', cspace,'as the colorspace',  orient,'orientations',pix_per_cell,
-    'pixels per cell and', cell_per_block,'cells per block', hog_channel, 'as the hog_channel', spatial_size, 'as the spatial_size', 
+print('Using:', cspace,'as the colorspace,',  orient,'orientations,',pix_per_cell,
+    'pixels per cell and,', cell_per_block,'cells per block,', hog_channel, 'as the hog_channel,', spatial_size, 'as the spatial_size,', 
     hist_bins, 'as the hist_bins, and', hist_range, 'as the hist_range')
 print('')
 
@@ -978,7 +988,7 @@ print('')
 
 
 # t = time.time()
-run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
+# run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
 # t2 = time.time()
 # print(round(t2-t, 5), 'Seconds to predict one whole image Image with HOG window Subsampling')
 
@@ -986,9 +996,5 @@ run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_
 
 
 
-# run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
-
-
-
-
+run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
