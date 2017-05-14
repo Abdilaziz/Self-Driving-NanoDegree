@@ -1,3 +1,5 @@
+# Vehicle Detection: Feature Extraction -> Training Classifier (Linear SVM) -> Make the classification work on full images (Sliding Window) -> Filter false positives (Heat Mapping)
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
