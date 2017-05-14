@@ -391,7 +391,7 @@ def heatMap_Detections(image, box_list, heatMaps=None):
         heatmap = heatMaps.avg_heatmap
 
     # Apply threshold to help remove false positives
-    heatmap = apply_threshold(heatmap, 4)
+    heatmap = apply_threshold(heatmap, 3)
 
     # plt.imshow(heatmap, cmap='hot')
     # plt.show()
@@ -550,7 +550,7 @@ class HeatMapTracker():
 
     def updateHeatMap(self, heatmap):
 
-        n = 10
+        n = 25
 
         self.recent_heatmap = heatmap
         self.recent_n_heatmaps.append(heatmap)
