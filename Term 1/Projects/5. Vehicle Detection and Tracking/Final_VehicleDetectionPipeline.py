@@ -2,7 +2,7 @@
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import train_test_split
@@ -14,39 +14,40 @@ import glob
 import pickle
 
 
-# Define a function to return some characteristics of the dataset 
+# Returns some characteristics of the dataset 
 def data_look(car_list, notcar_list):
     data_dict = {}
-    # Define a key in data_dict "n_cars" and store the number of car images
+    # Stores the number of car images
     data_dict["n_cars"] =  len(car_list)
-    # Define a key "n_notcars" and store the number of notcar images
+    # Stores the number of notcar images
     data_dict["n_notcars"] = len(notcar_list)
-    # Read in a test image, either car or notcar
+    
     test_image = cv2.imread(car_list[0])
-    # Define a key "image_shape" and store the test image shape 3-tuple
+    # Stores the test image shape 3-tuple
     data_dict["image_shape"] = test_image.shape
-    # Define a key "data_type" and store the data type of the test image.
+    # Stores the data type of the test image.
     data_dict["data_type"] = test_image.dtype
-    # Return data_dict
+    # Return the dictionary
     return data_dict
 
-# Define a function to compute binned color features  
+
+# Extracted Features
+
+# Computes binned color features  
 def bin_spatial(img, size=(32, 32)):
-    # Use cv2.resize().ravel() to create the feature vector
+    # Creates the feature vector
     features = cv2.resize(img, size).ravel() 
-    # Return the feature vector
     return features
 
-# Define a function to return HOG features and visualization
+# Returns HOG features and visualization (if vis is True)
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True):
-    # Call with two outputs if vis==True
+    # features are returned in vector form when feature_vec is True
     # transform_sqrt is for gamma normalization. It helps reduce the effect of shadows and other illumination
     if vis == True:
         features, hog_image = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
                                   cells_per_block=(cell_per_block, cell_per_block), transform_sqrt=True, 
                                   visualise=vis, feature_vector=feature_vec)
         return features, hog_image
-    # Otherwise call with one output
     else:      
         features = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
                        cells_per_block=(cell_per_block, cell_per_block), transform_sqrt=True, 
@@ -54,7 +55,7 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, featu
         return features
 
 
-# Define a function to compute color histogram features  
+# Computes color histogram features  
 def color_hist(img, nbins=32, bins_range=(0, 256)):
     # Compute the histogram of the color channels separately
     channel1_hist = np.histogram(img[:,:,0], bins=nbins, range=bins_range)
@@ -62,23 +63,22 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
     channel3_hist = np.histogram(img[:,:,2], bins=nbins, range=bins_range)
     # Concatenate the histograms into a single feature vector
     hist_features = np.concatenate((channel1_hist[0], channel2_hist[0], channel3_hist[0]))
-    # Return the individual histograms, bin_centers and feature vector
+    # Return the feature vector
     return hist_features
 
 
 # EXTRACT FEATURES FOR THE ENTIRE DATASET
+# Used for Training
 
-# Define a function to extract features from a list of images
-# Have this function call bin_spatial() and color_hist()
+# Extracts features from a list of images
 def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range=(0, 256), feature_vec=True):
-    # Create a list to append feature vectors to
+    # A list to append feature vectors
     features = []
-    histImg = 1
     # Iterate through the list of images
     for file in imgs:
         # Read in each one by one
         image = mpimg.imread(file)
-        # apply color conversion if other than 'RGB'
+        # apply color conversion if cspace isnt RGB
         if cspace != 'RGB':
             if cspace == 'HSV':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -92,12 +92,12 @@ def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_bloc
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
 
         else: feature_image = np.copy(image)      
-        # Apply bin_spatial() to get spatial color features
+        # Get the spatial color features
         spatial_features = bin_spatial(feature_image, size=spatial_size)
-        # Apply color_hist() also with a color space option now
+        # Get the color histogram features for the new color space
         hist_features = color_hist(feature_image, nbins=hist_bins, bins_range=hist_range)
 
-        # Call get_hog_features() with vis=False, feature_vec=True
+        # Get the HOG features for the appropriate number of Color Channels
         if hog_channel == 'ALL':
             hog_features = []
             for channel in range(feature_image.shape[2]):
@@ -111,7 +111,7 @@ def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_bloc
 
         # Append the new feature vector to the features list
         features.append(np.concatenate((spatial_features, hist_features, hog_features)))
-    # Return list of feature vectors
+    # Return list of feature vectors for each provided image
     return features
 
 
@@ -129,12 +129,9 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
     cars.extend(glob.glob('Datasets/vehicles/KITTI_extracted/*.png'))
 
 
-
     data_info = data_look(cars, notcars)
 
-
-
-    print('Your function returned a count of', 
+    print('The Dataset has', 
           data_info["n_cars"], ' cars and', 
           data_info["n_notcars"], ' non-cars')
     print('of size: ',data_info["image_shape"], ' and data type:', 
@@ -144,15 +141,13 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
 
     t = time.time()
 
-
-    # Extract all features that will be used by the classifier.
+    # Extract all features for cars and not-car images
     car_features = extract_features(cars, cspace=cspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
     notcar_features = extract_features(notcars, cspace=cspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=spatial_size, hist_bins=hist_bins, hist_range=hist_range, feature_vec=feature_vec)
 
 
     t2 = time.time()
-    #Generally (RGB Colorspace) 48.31s to Extract All Features for all images.
-    # LUV Colorspace is 52.8s
+
     print(round(t2-t, 2), 'Seconds to extract All features...')
 
     # Training the Classifier
@@ -162,14 +157,14 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
 
-    # Apply the scaler to X
+    # Apply the scaler to X to normalize the feature vectors
     scaled_X = X_scaler.transform(X)
 
     # Define the labels vector
     y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
 
 
-    # Split up data into randomized training and test sets
+    # Split up data into randomized training and test sets (20% test set)
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
         scaled_X, y, test_size=0.2, random_state=rand_state)
@@ -201,6 +196,8 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
     print('Saving Model in '+pickleName)
 
 
+    # Save the model and scaler alon with the paramters used to train it in a pickle file
+
     dist_pickle = {}
     dist_pickle['scaler'] = X_scaler
     dist_pickle['classifier'] = svc
@@ -221,20 +218,7 @@ def train_Classifier(pickleName, cspace='RGB', orient=9, pix_per_cell=8, cell_pe
     return svc, X_scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, model_score, data_info
 
 
-# Here is your draw_boxes function from the previous exercise
-def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
-    # Make a copy of the image
-    imcopy = np.copy(img)
-    # Iterate through the bounding boxes
-    for bbox in bboxes:
-        # Draw a rectangle given bbox coordinates
-        cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
-    # Return the image copy with boxes drawn
-    return imcopy
-
-
-# THIS BOTTOM PORTION IS FOR THE HOG SUBSAMPLINGS
-
+# Converts the color space of an image
 def convert_color(image, cspace):
 
     if cspace != 'RGB':
@@ -251,12 +235,11 @@ def convert_color(image, cspace):
     else: cvt_image = np.copy(image)
     return cvt_image
 
-# Algorithm for finding HOG features once for the whole image rather than per cell, and finding the other features per cell and classifying it rather than
 
+# Algorithm for finding HOG features once for the whole image rather than per cell, and finding the other features per cell
 
-def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range= (0,256)):
+def detect_vehicles(img, ystart, ystop, scale, classifier, scaler, cspace, orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range= (0,256)):
     
-
     windows = []
 
     draw_img = np.copy(img)
@@ -280,7 +263,7 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
     nyblocks = (ch1.shape[0] // pix_per_cell) - cell_per_block + 1 
     nfeat_per_block = orient*cell_per_block**2
     
-    # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
+    # 64 was the Datasets resolution. So windows that are classified should be 64x64
     window = 64
     # with a classification window being a 64x64 image, each window has (64/8) = 8 cells per row. Meaning 8-2+1 = 7 blocks per row
     nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
@@ -306,7 +289,7 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
             ypos = yb*cells_per_step
             xpos = xb*cells_per_step
 
-            # Extract HOG for this patch
+            # Extract HOG for this cell
             if hog_channel == 0:
                 hog_features = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
             elif hog_channel == 1:
@@ -325,16 +308,6 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
 
             # Extract the image patch
             subimg = cv2.resize(ctrans_tosearch[ytop:ytop+window, xleft:xleft+window], (64,64))
-                
-
-
-            # xbox_left = np.int(xleft*scale)
-            # ytop_draw = np.int(ytop*scale)
-            # win_draw = np.int(window*scale)
-            # windows.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
-
-
-
 
             # Get color features
             spatial_features = bin_spatial(subimg, size=spatial_size)
@@ -351,21 +324,29 @@ def detect_vehicles2(img, ystart, ystop, scale, classifier, scaler, cspace, orie
                 win_draw = np.int(window*scale)
                 windows.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
     
-    # print('Windows Searched is : ' , (nxsteps*nysteps))
-    # print('Number of cars found is: ', len(windows))
     return windows
 
+# Draws multiple boxes with the verticies provided by bboxes
+def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
 
+    imcopy = np.copy(img)
+    # Iterate through the bounding boxes
+    for bbox in bboxes:
+        # ( ((p1,p2),(p3,p4)) , ((p1,p2),(p3,p4))  )
+        cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+    return imcopy
+
+# creating a heatmap of the regions that had positive detections
+# filters false positives by thresholding the number of postive detections in one region
 from scipy.ndimage.measurements import label
-def heatMap_Detections(image, box_list, heatMaps=None):
+def heatMap_Detections(image, box_list, videoTracking=None):
 
     heat = np.zeros_like(image[:,:,0]).astype(np.float)
 
     def add_heat(heatmap, bbox_list):
-        # Iterate through list of bboxes
+        # Iterate through list of detected windows
         for box in bbox_list:
-            # Add += 1 for all pixels inside each bbox
-            # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+            # Add += 1 for all pixels inside each bbox to create a heatmap
             heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
 
         # Return updated heatmap
@@ -374,33 +355,33 @@ def heatMap_Detections(image, box_list, heatMaps=None):
     def apply_threshold(heatmap, threshold):
         # Zero out pixels below the threshold
         heatmap[heatmap <= threshold] = 0
-        # Return thresholded map
         return heatmap
 
-
-    # Add heat to each box in box list
+    # Create a heatmp of the detected windows
     heat = add_heat(heat,box_list)
-
-    # Apply threshold to help remove false positives
-    # heat = apply_threshold(heat, 0) # 3
-    # Visualize the heatmap when displaying    
+   
     heatmap = np.clip(heat, 0, 255)
 
-    if (heatMaps != None):
-        heatMaps.updateHeatMap(heatmap)
-        heatmap = heatMaps.avg_heatmap
+    # acquire the avg of the heatmaps for the past few frames
+    if (videoTracking != None):
+        videoTracking.updateHeatMap(heatmap)
+        heatmap = videoTracking.avg_heatmap
 
     # Apply threshold to help remove false positives
     heatmap = apply_threshold(heatmap, 3)
 
+
+    # mpimg.imsave('CarND-Vehicle-Detection-master/output_images/detectedWindows.jpg',draw_boxes(image,box_list))
+
+    # plt.figure()
     # plt.imshow(heatmap, cmap='hot')
-    # plt.show()
+    # plt.savefig('CarND-Vehicle-Detection-master/output_images/Heatmap.jpg')
+
+    return heatmap, videoTracking
 
 
-    return heatmap, heatMaps
-
-def draw_labeled_bboxes(img, labels, heatMaps=None):
-    # Iterate through all detected cars
+def draw_labeled_bboxes(img, labels, videoTracking=None):
+    # Iterate through all detected cars (after false positives have been removed)
     bboxes = []
     for car_number in range(1, labels[1]+1):
         # Find pixels with each car_number label value
@@ -416,60 +397,72 @@ def draw_labeled_bboxes(img, labels, heatMaps=None):
         # Draw the box on the image
         cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 2)
 
-    if (heatMaps!=None):
-        heatMaps.updateCentroid(bboxes, labels[1], img)
+    # Track the detected vehicles in videos. Uses detected vehicles to calculate the centroid
+    if (videoTracking!=None):
+        videoTracking.updateCentroid(bboxes, labels[1], img)
 
     # Return the image
-    return img, heatMaps
+    return img, videoTracking
 
-def draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, heatMaps=None):
 
-    ystart = 400 # 420
-    ystop = 656 # 548 
-    scale = 2 # 1
+def draw_detections(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, plot=False, videoTracking=None):
 
-    # we can detect cars with multiple scaled windows by running with multiple scale values
-    # the smaller the scale, the larger the searched image, meaning more windows are searched, meaning the detection window in the original image is smaller
+    # Cars of different sizes can be found in an image by scaling the window they are searched in
+    # the smaller the scale, the larger the searched image, meaning the detection window in the original image is smaller
 
-    detectedWindows = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+    # the search region for smaller windows can be limited to farther into the image
+
+    ystart = 400
+    ystop = 656 
+    scale = 2 
+
+    detectedWindows = detect_vehicles(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
     ystart = 400
     ystop = 550
-    scale = 1.5 # 96
-    detectedWindows1 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+    scale = 1.5
+    detectedWindows1 = detect_vehicles(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
     ystart = 400
     ystop = 500
     scale = 1
-    detectedWindows2 = detect_vehicles2(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+    detectedWindows2 = detect_vehicles(image, ystart, ystop, scale, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
 
     detectedWindows.extend(detectedWindows1)
 
     detectedWindows.extend(detectedWindows2)
 
-    # Itegrate the heatMap from frame to frame so areas get cool and hot over time.
-    heatmap, heatMaps = heatMap_Detections(image, detectedWindows, heatMaps)
 
-    # Find final boxes from heatmap using label function
+    # features, hog_image = get_hog_features(image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True)
+    # plt.figure()
+    # plt.imshow(hog_image, cmap='gray')
+    # plt.savefig('CarND-Vehicle-Detection-master/output_images/HOG_Image.jpg')
+
+
+    # Aquire the heatmap for this frame/image
+    heatmap, videoTracking = heatMap_Detections(image, detectedWindows, videoTracking)
+
+    # Finds the final boxes from the heatmap using label function
     labels = label(heatmap)
 
-    Final_Image, heatMaps = draw_labeled_bboxes(np.copy(image), labels, heatMaps)
-    n_cars = labels[1]
-    text1 = 'The Number of cars detected is: ' + str(n_cars)
-    cv2.putText(Final_Image, text1, (430,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
-
+    Final_Image, videoTracking = draw_labeled_bboxes(np.copy(image), labels, videoTracking)
 
     if plot == True:
         plt.imshow(Final_Image)
+        detected_img = draw_boxes(image, detectedWindows)
         plt.show()
-    return Final_Image, heatMaps
+
+    return Final_Image, videoTracking
 
 
-def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=None, plot=False):
+def process_image(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, videoTracking=None, plot=False):
     
     test_images = glob.glob('CarND-Vehicle-Detection-master/test_images/*.jpg')
     results = []
+    test_images = test_images[-4:-3]
+
+    videoTracking = VideoTracker()
 
     for fname in test_images:
         image = mpimg.imread(fname)
@@ -478,7 +471,7 @@ def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block,
 
         print(fname.split('\\')[-1])
         t = time.time()
-        result,_ = draw_detections2(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps, plot=plot)
+        result,_ = draw_detections(image, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, videoTracking=videoTracking, plot=plot)
         t2 = time.time()
         print(round(t2-t, 5), 'Seconds to predict one whole image Image with HOG window Subsampling')
         print('')
@@ -489,7 +482,7 @@ def run_Image2(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block,
             print(out)
             mpimg.imsave(out,results[i])
 
-def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range):
+def process_video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range):
 
     from moviepy.editor import VideoFileClip, ImageSequenceClip
 
@@ -501,7 +494,7 @@ def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, 
     new_frames = []
 
 
-    heatMaps = HeatMapTracker()
+    videoTracking = VideoTracker()
     
     # testing processing on a short section of the video
     # clip1 = clip1.subclip(5, 15)
@@ -510,9 +503,7 @@ def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, 
     print('Processing Each Frame of the Video')
     for frame in clip1.iter_frames():
 
-        result, heatMaps = draw_detections2(frame, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, heatMaps=heatMaps)
-        text = 'The centroids for the vehicles is ' + str(heatMaps.avg_centroid)
-        cv2.putText(result, text, (100,80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
+        result, videoTracking = draw_detections(frame, classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, videoTracking=videoTracking)
 
         new_frames.append(result)
 
@@ -520,7 +511,7 @@ def run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, 
     new_clip.write_videofile(video_output)
 
 
-class HeatMapTracker():
+class VideoTracker():
     def __init__(self):
 
         self.recent_heatmap = None
@@ -534,6 +525,7 @@ class HeatMapTracker():
 
         self.numb_totalCars = 0
 
+    # finds the index for the a new detections stored information
     def getArrayPlacement(avg_centroid, new_centroid):
         pixel_window = 50
 
@@ -548,6 +540,7 @@ class HeatMapTracker():
 
         return None
 
+    # updates the tracked heatmap values
     def updateHeatMap(self, heatmap):
 
         n = 25
@@ -559,6 +552,7 @@ class HeatMapTracker():
 
         self.avg_heatmap = np.mean(self.recent_n_heatmaps, axis=0)
 
+    # updates the tracked centroid values
     def updateCentroid(self, bboxes, total_cars, image):
 
         n = 20
@@ -570,7 +564,7 @@ class HeatMapTracker():
             centroid = [ int(bbox[0][0] + (bbox[1][0] - bbox[0][0])/2) , int(bbox[0][1] +  (bbox[1][1] - bbox[0][1])/2)]
 
 
-            arrayPos = HeatMapTracker.getArrayPlacement(self.avg_centroid, centroid)
+            arrayPos = VideoTracker.getArrayPlacement(self.avg_centroid, centroid)
 
             if arrayPos == None:
                 arrayPos = len(self.recent_centroids)          
@@ -590,23 +584,26 @@ class HeatMapTracker():
                 
                 self.avg_centroid[arrayPos] = avg
 
-
-            # print(arrayPos, ' position of centroid is ', self.avg_centroid[arrayPos])
-            HeatMapTracker.drawNumber(image, self.avg_centroid[arrayPos],  arrayPos)
         if (len(self.avg_centroid) > total_cars):
             for numb_to_remove in range( (len(self.avg_centroid) - total_cars) ):
                 # print('This is check number: ', numb_to_remove)
                 # a car has left (remove from array) I am removing all the data for now
-                removePos = HeatMapTracker.removeVehicle(self.avg_centroid,bboxes)
+                removePos = VideoTracker.removeVehicle(self.avg_centroid,bboxes)
                 if (removePos != None):
                     del self.recent_n_centroids[removePos]
                     del self.recent_centroids[removePos]
                     del self.avg_centroid[removePos]
-        # print('')
 
+        # Draw information onto the frame
+        VideoTracker.drawTextInfo(image, self.avg_centroid)
+
+
+    # removes data about vehicles that are not detected any longer
     def removeVehicle(avg_centroid, bboxes):
+        # if a detection is not in the image, return the position of its stored data so that it can be removed
         curPos = 0
-        # print('Need to remove centroid values for cars not detected')
+
+        # Loops through the stored centroids to find which one doesnt represent the new detections
 
         for cur_centroid in avg_centroid:
             pixel_window = 30
@@ -617,34 +614,42 @@ class HeatMapTracker():
 
             for bbox in bboxes:
                 new_centroid = [ int(bbox[0][0] + (bbox[1][0] - bbox[0][0])/2) , int(bbox[0][1] +  (bbox[1][1] - bbox[0][1])/2)]
-                
-                # print('Lower Thresh: ', lower_centroid_thresh)
-                # print('Upper Thresh: ', upper_centroid_thresh)
-                # print('New Centroid: ', new_centroid)
 
                 if  ((lower_centroid_thresh[0] < new_centroid[0]) & (lower_centroid_thresh[1] < new_centroid[1]) & (upper_centroid_thresh[0] > new_centroid[0]) & (upper_centroid_thresh[1] > new_centroid[1])):
-                    # print('Found the current box in the avg')
+                    # the stored centroid still represents the new detection
                     found = True
             if found != True:
-                # print('Removing:  ',curPos)
+                # The stored centoid value that needs to be removed has been found
                 return curPos
             curPos += 1
         return None
 
+    # Displays collected
+    def drawTextInfo(image, avg_centroids):
 
-    def drawNumber(image, centroid ,arrayPos):
-        pos  = centroid
-        text = str(arrayPos)
-        cv2.putText(image, text, (pos[0],pos[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0),2,cv2.LINE_AA)
+        text = 'The Number of cars detected is: ' + str(len(avg_centroids))
+        cv2.putText(image, text, (430,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
+
+        arrayPos = 0
+        # Draws the index of the detected vehicle info on the centroid of the vehicle
+        for centroid in avg_centroids:
+            text = str(arrayPos)
+            cv2.putText(image, text, (centroid[0],centroid[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
+            arrayPos += 1
+        text = 'The centroids for the vehicles are: ' + str(avg_centroids)
+        cv2.putText(image, text, (100,80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0),2,cv2.LINE_AA)
         return image
 
 
 
+
+# Name of the pickle storing the model, scaler, and parameters used throughout the pipeline
 VehicleDetectionPickle = 'VehicleDetection.p'
 
 print('')
+
+
 # Initialize Values used for feature extraction
-# Be sure to delete the current pickle file in order to reconfigure the trained classifier.
 
 #Spatial Binning
 new_spatial_size = (32, 32)
@@ -679,7 +684,7 @@ try:
     model_score = dist_pickle['model_score']
     data_info = dist_pickle['data_info']
 
-
+    # if the intialized values above dont match the ones used in the previously trained model, train the classifier again
     if (cspace != new_colorspace) | (orient!=new_orient) | (pix_per_cell != new_pix_per_cell) | (cell_per_block != new_cell_per_block) | (hog_channel != new_hog_channel) | (spatial_size != new_spatial_size) | (hist_bins != new_hist_bins) | (hist_range != new_hist_range):
         print('New Parameters have been choosen. ')
         print(' Now re-training the classifier')
@@ -693,11 +698,14 @@ except (OSError, IOError) as e:
     classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range, model_score, data_info = train_Classifier(VehicleDetectionPickle, cspace=new_colorspace, orient=new_orient, pix_per_cell=new_pix_per_cell, cell_per_block=new_cell_per_block, hog_channel=new_hog_channel, spatial_size=new_spatial_size, hist_bins=new_hist_bins, hist_range=new_hist_range)
 
 
-print('Your Training Data has a count of', 
+
+# Provides info on data set used to train the model that has been loaded
+print('The Training Data has a count of', 
       data_info["n_cars"], ' cars and', 
       data_info["n_notcars"], ' non-cars')
 print('of size: ',data_info["image_shape"], ' and data type:', 
       data_info["data_type"])
+# Displays the accuracy of the model that has been loaded
 print('The Models accuracy is', model_score)
 
 
@@ -708,8 +716,8 @@ print('Using:', cspace,'as the colorspace,',  orient,'orientations,',pix_per_cel
 print('')
 
 
-# run_Image2(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
+# process_image(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
 
 
-run_Video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+process_video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
