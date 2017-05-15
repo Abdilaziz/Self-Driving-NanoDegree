@@ -2,7 +2,6 @@
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import train_test_split
@@ -245,11 +244,12 @@ def detect_vehicles(img, ystart, ystop, scale, classifier, scaler, cspace, orien
     draw_img = np.copy(img)
     img = img.astype(np.float32)/255
     
+    # seperates the portion of the image that will be processed
     img_tosearch = img[ystart:ystop,:,:]
 
     ctrans_tosearch = convert_color(img_tosearch, cspace)
 
-    # scales the whole image down making the search window larger
+    # scales the whole image down or up, making the search window larger
     if scale != 1:
         imshape = ctrans_tosearch.shape
         ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))
@@ -258,14 +258,15 @@ def detect_vehicles(img, ystart, ystop, scale, classifier, scaler, cspace, orien
     ch2 = ctrans_tosearch[:,:,1]
     ch3 = ctrans_tosearch[:,:,2]
 
-    # Define blocks and steps as above
-    nxblocks = (ch1.shape[1] // pix_per_cell) - cell_per_block + 1
-    nyblocks = (ch1.shape[0] // pix_per_cell) - cell_per_block + 1 
+    # Number of blocks in the whole image
+    nxblocks = (ch1.shape[1] // pix_per_cell) - cell_per_block + 1 # 159
+    nyblocks = (ch1.shape[0] // pix_per_cell) - cell_per_block + 1 # 89
+    # number of features per block
     nfeat_per_block = orient*cell_per_block**2
     
     # 64 was the Datasets resolution. So windows that are classified should be 64x64
     window = 64
-    # with a classification window being a 64x64 image, each window has (64/8) = 8 cells per row. Meaning 8-2+1 = 7 blocks per row
+    # with a classification window being a 64x64 image, each window has (64/8) = 8 cells per row. Meaning 8-2+1 = 7 blocks per window
     nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
     cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
@@ -289,9 +290,9 @@ def detect_vehicles(img, ystart, ystop, scale, classifier, scaler, cspace, orien
             ypos = yb*cells_per_step
             xpos = xb*cells_per_step
 
-            # Extract HOG for this cell
+            # Extract HOG for this window (64x64)
             if hog_channel == 0:
-                hog_features = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_features = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel()
             elif hog_channel == 1:
                 hog_features = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
             elif hog_channel == 2:
@@ -370,13 +371,6 @@ def heatMap_Detections(image, box_list, videoTracking=None):
     # Apply threshold to help remove false positives
     heatmap = apply_threshold(heatmap, 3)
 
-
-    # mpimg.imsave('CarND-Vehicle-Detection-master/output_images/detectedWindows.jpg',draw_boxes(image,box_list))
-
-    # plt.figure()
-    # plt.imshow(heatmap, cmap='hot')
-    # plt.savefig('CarND-Vehicle-Detection-master/output_images/Heatmap.jpg')
-
     return heatmap, videoTracking
 
 
@@ -433,13 +427,6 @@ def draw_detections(image, classifier, scaler, cspace, orient, pix_per_cell, cel
 
     detectedWindows.extend(detectedWindows2)
 
-
-    # features, hog_image = get_hog_features(image[:,:,0], orient, pix_per_cell, cell_per_block, vis=True)
-    # plt.figure()
-    # plt.imshow(hog_image, cmap='gray')
-    # plt.savefig('CarND-Vehicle-Detection-master/output_images/HOG_Image.jpg')
-
-
     # Aquire the heatmap for this frame/image
     heatmap, videoTracking = heatMap_Detections(image, detectedWindows, videoTracking)
 
@@ -460,13 +447,12 @@ def process_image(classifier, scaler, cspace, orient, pix_per_cell, cell_per_blo
     
     test_images = glob.glob('CarND-Vehicle-Detection-master/test_images/*.jpg')
     results = []
-    test_images = test_images[-4:-3]
-
-    videoTracking = VideoTracker()
 
     for fname in test_images:
         image = mpimg.imread(fname)
 
+
+        videoTracking = VideoTracker()
         image = image[:,:,:3]
 
         print(fname.split('\\')[-1])
@@ -543,7 +529,7 @@ class VideoTracker():
     # updates the tracked heatmap values
     def updateHeatMap(self, heatmap):
 
-        n = 25
+        n = 20
 
         self.recent_heatmap = heatmap
         self.recent_n_heatmaps.append(heatmap)
@@ -716,8 +702,8 @@ print('Using:', cspace,'as the colorspace,',  orient,'orientations,',pix_per_cel
 print('')
 
 
-# process_image(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
+process_image(classifier,scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel,spatial_size, hist_bins, hist_range, plot=False)
 
 
-process_video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
+# process_video(classifier, scaler, cspace, orient, pix_per_cell, cell_per_block, hog_channel, spatial_size, hist_bins, hist_range)
 
