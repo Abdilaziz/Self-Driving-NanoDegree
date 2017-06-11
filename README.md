@@ -5,6 +5,8 @@ This Repo is to track all the materials acquired throughout
 the Self-Driving-NanoDegree Program on Udacity.
 
 ## Projects Included:
+## Term 1: 
+
 ## 1) Lane Lines Project
 
 Finding the Lane Lines in Images and Videos by thresholding color values and choosing a region of interest. 
@@ -50,4 +52,14 @@ False positives and multiple detection for the same vehicle are corrected by usi
 
 Output: Video of vehicle detections being drawn on the image, with their position values displayed.
 Used: OpenCV, Sklearn. (Python)
+
+## Term 2
+
+
+
+
+
+
+
+
 
