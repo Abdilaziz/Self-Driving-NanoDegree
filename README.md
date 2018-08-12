@@ -55,10 +55,13 @@ Used: OpenCV, Sklearn. (Python)
 
 ## Term 2
 
+## 1) Extended Kalman Filter
 
 
+## 2) Unscented Kalman Filter
 
 
+## MORE PROJECTS IN OTHER REPO (Self-Driving-Car)
 
 
 
